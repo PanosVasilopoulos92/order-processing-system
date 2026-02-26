@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.product.dto.request.CreateProductRequest;
+import org.viators.orderprocessingsystem.product.dto.request.UpdateProductRequest;
 import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResponse;
+import org.viators.orderprocessingsystem.user.UserService;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +16,9 @@ import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResp
 public class ProductService {
 
     private final ProductRepository productRepository;
+
+    // Other Service dependencies
+    private final UserService userService;
 
     @Transactional
     public ProductSummaryResponse create(CreateProductRequest request) {
@@ -25,5 +30,17 @@ public class ProductService {
         entity = productRepository.save(entity);
 
         return ProductSummaryResponse.from(entity);
+    }
+
+    @Transactional
+    public ProductSummaryResponse update(UpdateProductRequest request) {
+
+
+
+        if (productRepository.existsByName(request.name())) {
+            throw new IllegalArgumentException("Name already exists");
+        }
+
+        request.updateResource();
     }
 }
