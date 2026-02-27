@@ -1,3 +1,7 @@
 spring:
   application:
     name: order-processing-system
+
+logging:
+  file:
+    name: logs/ops-logs

@@ -37,10 +37,11 @@ public class ProductService {
 
 
 
-        if (productRepository.existsByName(request.name())) {
-            throw new IllegalArgumentException("Name already exists");
-        }
-
-        request.updateResource();
+//        if (productRepository.existsByName(request.name())) {
+//            throw new IllegalArgumentException("Name already exists");
+//        }
+//
+//        request.updateResource();
+        return null;
     }
 }
