@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @Setter
 @ToString(callSuper = true)
@@ -45,7 +45,6 @@ public class UserT extends BaseEntity implements UserDetails {
     @Column(name = "user_role", nullable = false)
     @Builder.Default
     private UserRolesEnum userRole = UserRolesEnum.USER;
-
 
     // --- User Details implementation --------------------------------
 
