@@ -1,6 +1,9 @@
 spring:
   application:
     name: order-processing-system
+  threads:
+    virtual:
+      enabled: true
 
 application:
   security:
