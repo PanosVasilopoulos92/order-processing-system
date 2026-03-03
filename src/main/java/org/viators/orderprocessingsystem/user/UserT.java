@@ -41,10 +41,16 @@ public class UserT extends BaseEntity implements UserDetails {
     @Column(name = "age")
     private Integer age;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "shipping_address")
+    private String shippingAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     @Builder.Default
-    private UserRolesEnum userRole = UserRolesEnum.USER;
+    private UserRolesEnum userRole = UserRolesEnum.CUSTOMER;
 
     // --- User Details implementation --------------------------------
 

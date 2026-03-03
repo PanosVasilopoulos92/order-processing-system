@@ -322,7 +322,7 @@ public class UserT extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(name = "user_role", nullable = false)
     @Builder.Default
-    private UserRolesEnum userRole = UserRolesEnum.USER;
+    private UserRolesEnum userRole = UserRolesEnum.CUSTOMER;
 
     // ── UserDetails Implementation ────────────────────────────────
 
