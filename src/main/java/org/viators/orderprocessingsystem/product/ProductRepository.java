@@ -20,6 +20,6 @@ public interface ProductRepository extends JpaRepository<ProductT, Long> {
 
     List<ProductT> findAllByNameContains(String nameText);
 
-    Page<ProductT> findAllActive(StatusEnum status, Pageable pageable);
+    Page<ProductT> findAllByStatus(StatusEnum status, Pageable pageable);
 
 }

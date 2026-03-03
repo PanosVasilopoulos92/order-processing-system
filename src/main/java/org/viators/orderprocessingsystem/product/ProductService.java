@@ -32,7 +32,7 @@ public class ProductService {
 
 
     public Page<ProductDetailsResponse> getAllActiveProducts(Pageable pageable) {
-        Page<ProductT> results = productRepository.findAllActive(StatusEnum.ACTIVE, pageable);
+        Page<ProductT> results = productRepository.findAllByStatus(StatusEnum.ACTIVE, pageable);
         return results.map(ProductDetailsResponse::from);
     }
 

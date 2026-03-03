@@ -1,5 +1,7 @@
 package org.viators.orderprocessingsystem.user;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
@@ -11,7 +13,11 @@ public interface UserRepository extends JpaRepository<UserT, Long> {
 
     Optional<UserT> findByUuidAndStatus(String userUuid, StatusEnum status);
 
+    Optional<UserT> findByUuid(String userUuid);
+
     Optional<UserT> findByUsername(String username);
+
+    Page<UserT> findAllByStatus(StatusEnum status, Pageable pageable);
 
     boolean existsByUsername(String username);
 
