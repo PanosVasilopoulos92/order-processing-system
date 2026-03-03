@@ -61,13 +61,15 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{productUuid}")
     public ResponseEntity<Void> deactivateProduct(@PathVariable String productUuid) {
         productService.deactivateProduct(productUuid);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{productUuid}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{productUuid}/re-activate")
     public ResponseEntity<Void> reActivateProduct(@PathVariable String productUuid) {
         productService.reActivateProduct(productUuid);
         return ResponseEntity.noContent().build();

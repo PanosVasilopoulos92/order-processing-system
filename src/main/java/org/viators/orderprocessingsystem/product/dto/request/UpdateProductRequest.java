@@ -3,6 +3,7 @@ package org.viators.orderprocessingsystem.product.dto.request;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import org.viators.orderprocessingsystem.common.enums.CategoryEnum;
 import org.viators.orderprocessingsystem.product.ProductT;
 
@@ -18,7 +19,7 @@ public record UpdateProductRequest(
         @Digits(integer = 10, fraction = 2, message = "Price must have at most 2 decimal places")
         BigDecimal price,
 
-        @Positive(message = "Stock quantity cannot be zero or negative")
+        @PositiveOrZero(message = "Stock quantity cannot be negative")
         Long stockQuantity
 ) {
 

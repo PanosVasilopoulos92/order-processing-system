@@ -30,6 +30,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    @Transactional
     public AuthenticationResponse registerUser(RegisterUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new DuplicateResourceException("User", "username", request.username());

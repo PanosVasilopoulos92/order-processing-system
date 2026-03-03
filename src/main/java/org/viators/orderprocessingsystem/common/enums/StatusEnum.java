@@ -13,8 +13,8 @@ public enum StatusEnum {
 
     public StatusEnum getStatusEnum(String code) {
         return switch (code) {
-            case "0" -> StatusEnum.ACTIVE;
-            case "1" -> StatusEnum.INACTIVE;
+            case "0" -> StatusEnum.INACTIVE;
+            case "1" -> StatusEnum.ACTIVE;
             default -> throw new IllegalArgumentException("Code does not match to any value of this enum");
         };
     }

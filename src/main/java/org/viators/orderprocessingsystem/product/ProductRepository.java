@@ -16,7 +16,7 @@ public interface ProductRepository extends JpaRepository<ProductT, Long> {
 
     Optional<ProductT> findByUuid(String uuid);
 
-    boolean existsByName(String name);
+    boolean existsByNameIgnoreCase(String name);
 
     List<ProductT> findAllByNameContains(String nameText);
 

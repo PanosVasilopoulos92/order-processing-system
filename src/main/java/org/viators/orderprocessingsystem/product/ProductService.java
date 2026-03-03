@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.DuplicateResourceException;
@@ -16,8 +15,6 @@ import org.viators.orderprocessingsystem.product.dto.request.UpdateProductReques
 import org.viators.orderprocessingsystem.product.dto.response.ProductDetailsResponse;
 import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResponse;
 import org.viators.orderprocessingsystem.user.UserService;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +42,7 @@ public class ProductService {
 
     @Transactional
     public ProductSummaryResponse create(CreateProductRequest request) {
-        if (productRepository.existsByName(request.name())) {
+        if (productRepository.existsByNameIgnoreCase(request.name())) {
             throw new IllegalArgumentException("Name already exists");
         }
 
@@ -61,7 +58,7 @@ public class ProductService {
         ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
-        if (productRepository.existsByName(request.name())) {
+        if (productRepository.existsByNameIgnoreCase(request.name())) {
             throw new DuplicateResourceException("Product", "name", request.name());
         }
 
@@ -71,7 +68,7 @@ public class ProductService {
 
     @Transactional
     public void deactivateProduct(String productUuid) {
-        ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
+        ProductT product = productRepository.findByUuid(productUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
         if (product.getStatus().equals(StatusEnum.INACTIVE)) {
@@ -83,7 +80,7 @@ public class ProductService {
 
     @Transactional
     public void reActivateProduct(String productUuid) {
-        ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
+        ProductT product = productRepository.findByUuid(productUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
         product.setStatus(StatusEnum.ACTIVE);
