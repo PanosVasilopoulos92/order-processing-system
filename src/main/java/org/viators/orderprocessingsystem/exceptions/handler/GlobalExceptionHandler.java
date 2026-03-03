@@ -151,7 +151,7 @@ public class GlobalExceptionHandler {
         ErrorResponse error = ErrorResponse.of(
                 HttpStatus.CONFLICT.value(),
                 ErrorCodeEnum.DATA_INTEGRITY_VIOLATION,
-                ex.getMostSpecificCause().getMessage(),
+                "A data integrity constraint was violated. Please check your request for duplicate or invalid references.",
                 request.getRequestURI()
         );
 
@@ -171,11 +171,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
 
-        log.debug("Malformed request body - Path: {}", request.getRequestURI());
+        log.debug("Malformed request body - Path: {} - Detail: {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 ErrorCodeEnum.MALFORMED_REQUEST,
-                ex.getMessage(),
+                "The request body is malformed or contains invalid JSON",
                 request.getRequestURI()
         );
 
