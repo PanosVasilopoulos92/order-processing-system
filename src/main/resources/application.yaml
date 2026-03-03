@@ -1,3 +1,16 @@
 spring:
   application:
     name: order-processing-system
+  threads:
+    virtual:
+      enabled: true
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
+      expiration: 86400000
+
+logging:
+  file:
+    name: logs/ops-logs.log
