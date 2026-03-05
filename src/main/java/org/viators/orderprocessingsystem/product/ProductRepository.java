@@ -7,8 +7,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ProductRepository extends JpaRepository<ProductT, Long>, JpaSpecificationExecutor<ProductT> {
@@ -23,4 +25,5 @@ public interface ProductRepository extends JpaRepository<ProductT, Long>, JpaSpe
 
     Page<ProductT> findAllByStatus(StatusEnum status, Pageable pageable);
 
+    Set<ProductT> findAllByUuidIn(Collection<String> uuids);
 }

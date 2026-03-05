@@ -12,6 +12,9 @@ import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.DuplicateResourceException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
+import org.viators.orderprocessingsystem.order.OrderService;
+import org.viators.orderprocessingsystem.order.OrderT;
+import org.viators.orderprocessingsystem.orderitem.OrderItemService;
 import org.viators.orderprocessingsystem.product.dto.request.CreateProductRequest;
 import org.viators.orderprocessingsystem.product.dto.request.ProductSearchFilterRequest;
 import org.viators.orderprocessingsystem.product.dto.request.UpdateProductRequest;
@@ -35,6 +38,15 @@ public class ProductService {
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("name", "price", "createdAt");
 
+    public ProductT getActiveProduct(String productUuid) {
+        return productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
+            .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
+    }
+
+    public Set<ProductT> getProductsInSet(Set<String> productUuids) {
+        return productRepository.findAllByUuidIn(productUuids);
+    }
+
     public Page<ProductDetailsResponse> getAllActiveProducts(Pageable pageable) {
         Page<ProductT> results = productRepository.findAllByStatus(StatusEnum.ACTIVE, pageable);
         return results.map(ProductDetailsResponse::from);
@@ -49,7 +61,7 @@ public class ProductService {
 
     @Transactional
     public ProductSummaryResponse create(CreateProductRequest request) {
-        if (productRepository.existsByName(request.name())) {
+        if (productRepository.existsByNameIgnoreCase(request.name())) {
             throw new DuplicateResourceException("Name already exists");
         }
 

@@ -9,9 +9,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.viators.orderprocessingsystem.common.BaseEntity;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.common.enums.UserRolesEnum;
+import org.viators.orderprocessingsystem.order.OrderT;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -51,6 +53,9 @@ public class UserT extends BaseEntity implements UserDetails {
     @Column(name = "user_role", nullable = false)
     @Builder.Default
     private UserRolesEnum userRole = UserRolesEnum.CUSTOMER;
+
+    @OneToMany(mappedBy = "customer")
+    private Set<OrderT> orders;
 
     // --- User Details implementation --------------------------------
 

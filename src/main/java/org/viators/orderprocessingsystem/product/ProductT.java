@@ -30,5 +30,5 @@ public class ProductT extends BaseEntity {
     private CategoryEnum category;
 
     @Column(name = "stock_quantity")
-    private Long stockQuantity;
+    private BigDecimal stockQuantity;
 }
