@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.viators.orderprocessingsystem.product.dto.request.CreateProductRequest;
+import org.viators.orderprocessingsystem.product.dto.request.ProductSearchFilterRequest;
 import org.viators.orderprocessingsystem.product.dto.request.UpdateProductRequest;
 import org.viators.orderprocessingsystem.product.dto.response.ProductDetailsResponse;
 import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResponse;
@@ -73,5 +74,13 @@ public class ProductController {
     public ResponseEntity<Void> reActivateProduct(@PathVariable String productUuid) {
         productService.reActivateProduct(productUuid);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search-filter")
+    public ResponseEntity<Page<ProductDetailsResponse>> searchDynamicallyForProduct(
+        @Valid @ModelAttribute ProductSearchFilterRequest request,
+        @PageableDefault(size = 20) Pageable pageable) {
+        Page<ProductDetailsResponse> response = productService.searchDynamicallyForProduct(request, pageable);
+        return ResponseEntity.ok(response);
     }
 }
