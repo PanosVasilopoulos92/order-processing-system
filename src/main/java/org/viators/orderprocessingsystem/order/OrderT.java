@@ -25,15 +25,15 @@ public class OrderT extends BaseEntity {
     @Column(name = "customer_address", nullable = false)
     private String shippingAddress;
 
-    @Column(name = "total_amount", nullable = false)
+    @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
-    private Set<OrderItemT> orderItems;
-
     @Enumerated(EnumType.STRING)
-    @Column(name = "order_status", nullable = false)
+    @Column(name = "order_status")
     private OrderStatusEnum orderStatus;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<OrderItemT> orderItems;
 
     @ManyToOne
     @JoinColumn(name = "customer_id", referencedColumnName = "id", nullable = false)
