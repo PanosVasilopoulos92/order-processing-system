@@ -4,20 +4,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.DuplicateResourceException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.product.dto.request.CreateProductRequest;
+import org.viators.orderprocessingsystem.product.dto.request.ProductSearchFilterRequest;
 import org.viators.orderprocessingsystem.product.dto.request.UpdateProductRequest;
 import org.viators.orderprocessingsystem.product.dto.response.ProductDetailsResponse;
 import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResponse;
 import org.viators.orderprocessingsystem.user.UserService;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class ProductService {
     // Other Service dependencies
     private final UserService userService;
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("name", "price", "createdAt");
 
     public Page<ProductDetailsResponse> getAllActiveProducts(Pageable pageable) {
         Page<ProductT> results = productRepository.findAllByStatus(StatusEnum.ACTIVE, pageable);
@@ -46,7 +50,7 @@ public class ProductService {
     @Transactional
     public ProductSummaryResponse create(CreateProductRequest request) {
         if (productRepository.existsByName(request.name())) {
-            throw new IllegalArgumentException("Name already exists");
+            throw new DuplicateResourceException("Name already exists");
         }
 
         ProductT entity = request.toEntity();
@@ -61,7 +65,7 @@ public class ProductService {
         ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
-        if (productRepository.existsByName(request.name())) {
+        if (productRepository.existsByNameIgnoreCase(request.name())) {
             throw new DuplicateResourceException("Product", "name", request.name());
         }
 
@@ -71,7 +75,7 @@ public class ProductService {
 
     @Transactional
     public void deactivateProduct(String productUuid) {
-        ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
+        ProductT product = productRepository.findByUuid(productUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
         if (product.getStatus().equals(StatusEnum.INACTIVE)) {
@@ -83,10 +87,38 @@ public class ProductService {
 
     @Transactional
     public void reActivateProduct(String productUuid) {
-        ProductT product = productRepository.findByUuidAndStatus(productUuid, StatusEnum.ACTIVE)
+        ProductT product = productRepository.findByUuid(productUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
         product.setStatus(StatusEnum.ACTIVE);
+    }
+
+    public Page<ProductDetailsResponse> searchDynamicallyForProduct(ProductSearchFilterRequest request, Pageable pageable) {
+        pageable.getSort().stream()
+            .map(Sort.Order::getProperty)
+            .filter(field -> !ALLOWED_SORT_FIELDS.contains(field))
+            .findFirst()
+            .ifPresent(field ->{
+                throw new BusinessValidationException(
+                    "Invalid sort field: '%s'. Allowed fields: %s".formatted(field, ALLOWED_SORT_FIELDS));
+            });
+
+        Specification<ProductT> specs = Specification.where(ProductSpecs.hasStatusActive());
+
+        if (request.nameText() != null) {
+            specs = specs.and(ProductSpecs.hasNameContaining(request.nameText()));
+        }
+
+        if (request.category() != null) {
+            specs = specs.and(ProductSpecs.hasCategory(request.category()));
+        }
+
+        if (request.minPrice() != null && request.maxPrice() != null) {
+            specs = specs.and(ProductSpecs.hasPriceBetween(request.minPrice(), request.maxPrice()));
+        }
+
+        return productRepository.findAll(specs, pageable)
+            .map(ProductDetailsResponse::from);
     }
 
 }

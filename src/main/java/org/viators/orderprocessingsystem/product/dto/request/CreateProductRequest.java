@@ -24,7 +24,7 @@ public record CreateProductRequest(
         BigDecimal price,
 
         @NotNull(message = "Stock quantity is required")
-        @Positive(message = "Stock quantity cannot be zero or negative")
+        @PositiveOrZero(message = "Stock quantity cannot be negative")
         Long stockQuantity
 ) {
 
