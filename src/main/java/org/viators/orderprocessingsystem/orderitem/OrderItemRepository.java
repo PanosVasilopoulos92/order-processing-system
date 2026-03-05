@@ -9,6 +9,4 @@ import java.util.Set;
 
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItemT, Long> {
-
-    Set<OrderItemT> findAllByUuidIn(Collection<String> uuids);
 }

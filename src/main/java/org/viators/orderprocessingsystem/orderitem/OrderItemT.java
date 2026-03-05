@@ -8,10 +8,9 @@ import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.product.ProductT;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "order_items")
 @Getter
 @Setter
 @ToString
@@ -19,9 +18,6 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderItemT extends BaseEntity {
-
-    @Column(name = "product_name", nullable = false)
-    private String productName;
 
     @Column(name = "quantity", nullable = false)
     private BigDecimal quantity;

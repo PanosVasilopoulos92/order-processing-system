@@ -14,7 +14,7 @@ public record OrderDetailsResponse(
     String orderUuid,
     StatusEnum status,
     Instant createdAt,
-    String customerAddress,
+    String shippingAddress,
     BigDecimal totalAmount,
     Set<OrderItemSummaryResponse> orderItems,
     String customerUuid

@@ -12,12 +12,14 @@ import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
 import org.viators.orderprocessingsystem.orderitem.OrderItemService;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
+import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
 import org.viators.orderprocessingsystem.product.ProductService;
 import org.viators.orderprocessingsystem.product.ProductT;
 import org.viators.orderprocessingsystem.user.UserService;
 import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,57 +42,57 @@ public class OrderService {
     @Transactional
     public OrderDetailsResponse create(String loggedInCustomer, CreateOrderRequest request) {
         UserT customer = userService.getActiveUser(loggedInCustomer);
-        Set<OrderItemT> orderItems = orderItemService.getOrderItemsForUuids(request.orderItemUuids());
 
-        Set<ProductT> productsInvolved = validateOrderAndReturnAffectedOrderItems(orderItems);
+        Set<String> productUuids = request.orderItemRequests().stream()
+            .map(CreateOrderItemRequest::productUuid)
+            .collect(Collectors.toSet());
+
+        Set<ProductT> productsInvolved = productService.getProductsInSet(productUuids);
+        validateOrderAndReturnAffectedOrderItems(productsInvolved);
 
         OrderT order = new OrderT();
         order.setCustomer(customer);
         order.setShippingAddress(customer.getShippingAddress());
-        orderItems.forEach(order::addOrderItem);
+
+        orderRepository.save(order);
+
+        Set<OrderItemT> orderItems = new HashSet<>();
+        for (CreateOrderItemRequest orderItemRequest : request.orderItemRequests()) {
+            OrderItemT orderItem = new OrderItemT();
+            ProductT product = productService.getActiveProduct(orderItemRequest.productUuid());
+            orderItem.setQuantity(orderItemRequest.quantity());
+            orderItem.setProductPrice(product.getPrice());
+            orderItem.setProduct(product);
+            orderItem.setOrder(order);
+            orderItems.add(orderItem);
+            order.addOrderItem(orderItem);
+
+            product.setStockQuantity(product.getStockQuantity().subtract(orderItem.getQuantity()));
+        }
+
         BigDecimal totalAmount = orderItems.stream()
-            .map(item -> item.getProductPrice().multiply(item.getQuantity()))
+            .map(orderItemT -> orderItemT.getProductPrice().multiply(orderItemT.getQuantity()))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        order.setTotalAmount(totalAmount);
         order.setOrderStatus(OrderStatusEnum.PENDING);
+        order.setTotalAmount(totalAmount);
         order = orderRepository.save(order);
-
-        for (ProductT product : productsInvolved) {
-            BigDecimal quantity = orderItems.stream()
-                .filter(orderItem -> product.getUuid().equals(orderItem.getUuid()))
-                .findFirst()
-                .map(OrderItemT::getQuantity)
-                .get();
-
-            product.setStockQuantity(product.getStockQuantity().subtract(quantity));
-        }
 
         return OrderDetailsResponse.from(order);
     }
 
-    private Set<ProductT> validateOrderAndReturnAffectedOrderItems(Set<OrderItemT> orderItems) {
+    private void validateOrderAndReturnAffectedOrderItems(Set<ProductT> productsInvolved) {
 
-        if (orderItems.isEmpty()) {
+        if (productsInvolved.isEmpty()) {
             throw new BusinessValidationException("An order must have at least one order item");
         }
 
-        Set<String> productUuids = orderItems.stream()
-            .map(OrderItemT::getProduct)
-            .map(ProductT::getUuid)
-            .collect(Collectors.toSet());
+        boolean hasInactiveProduct = productsInvolved.stream()
+            .anyMatch(product -> StatusEnum.INACTIVE.equals(product.getStatus()));
 
-        Set<ProductT> productsInvolved = productService.getProductsInSet(productUuids);
-        productsInvolved.stream()
-            .filter(product -> StatusEnum.INACTIVE.equals(product.getStatus()))
-            .findAny()
-            .orElseThrow(() -> new BusinessValidationException("There is an inactive product inside this order"));
-
-        return productsInvolved;
+        if (hasInactiveProduct) {
+            throw new BusinessValidationException("There is an inactive product inside this order");
+        }
     }
 
-
-    public void changeStockQuantityAfterOrder(Set<ProductT> productsInvolved, Set<OrderItemT> orderItems) {
-
-    }
 }
