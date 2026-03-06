@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public record OrderDetailsResponse(
     String orderUuid,
-    OrderStateEnum orderStatus,
+    OrderStateEnum orderState,
     Instant createdAt,
     String shippingAddress,
     BigDecimal totalAmount,

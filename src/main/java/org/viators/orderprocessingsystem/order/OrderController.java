@@ -2,6 +2,10 @@ package org.viators.orderprocessingsystem.order;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,6 +14,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
+import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
 
 import java.net.URI;
 
@@ -48,4 +53,19 @@ public class OrderController {
         return ResponseEntity.noContent().build();
     }
 
+
+    @GetMapping("/history")
+    public ResponseEntity<Page<OrderSummaryResponse>> getOrdersHistoryPlacedByCustomer(@AuthenticationPrincipal(expression = "uuid") String customerUuid,
+                                                                                       @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
+                                                                                       Pageable pageable) {
+        Page<OrderSummaryResponse> response = orderService.getOrdersHistoryPlacedByCustomer(customerUuid, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{orderUuid}/details")
+    public ResponseEntity<OrderDetailsResponse> getOrderDetails(@AuthenticationPrincipal(expression = "uuid") String userUuid,
+                                                                @PathVariable String orderUuid) {
+        OrderDetailsResponse response = orderService.getOrderDetails(userUuid, orderUuid);
+        return ResponseEntity.ok(response);
+    }
 }
