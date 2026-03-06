@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
 
@@ -41,8 +42,9 @@ public class OrderController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{orderUuid}/change-order-state")
-    public ResponseEntity<Void> changeOrderState(@PathVariable String orderUuid) {
-        orderService.changeOrderState(orderUuid);
+    public ResponseEntity<Void> changeOrderState(@PathVariable String orderUuid,
+                                                 @RequestParam OrderStateEnum orderState) {
+        orderService.changeOrderState(orderUuid, orderState);
         return ResponseEntity.noContent().build();
     }
 
