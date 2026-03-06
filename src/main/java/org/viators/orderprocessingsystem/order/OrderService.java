@@ -109,10 +109,9 @@ public class OrderService {
     @Transactional
     public void cancelOrder(String loggedInUserUuid, String orderUuid) {
         OrderT order = getActiveOrder(orderUuid);
-        UserT customer = userService.getActiveUser(order.getCustomer().getUuid());
-        boolean isAdminUser = customer.isAdminUser();
 
-        validateEligibleCancellation(loggedInUserUuid, customer.getUuid(), isAdminUser, order.getOrderState());
+
+        validateEligibleCancellation(loggedInUserUuid, order.getCustomer().getUuid(), order.getOrderState());
         order.setOrderState(OrderStateEnum.CANCELLED);
 
         Set<OrderItemT> orderItems = orderItemService.getAllOrderItemsForOrderWithProducts(orderUuid);
@@ -122,8 +121,11 @@ public class OrderService {
         );
     }
 
-    public void validateEligibleCancellation(String loggedInCustomerUuid, String customerOwningOrderUuid, boolean isAdminUser, OrderStateEnum orderState) {
-        if (!loggedInCustomerUuid.equals(customerOwningOrderUuid) && !isAdminUser) {
+    public void validateEligibleCancellation(String loggedInUserUuid, String customerOwningOrderUuid, OrderStateEnum orderState) {
+        UserT loggedInUser = userService.getActiveUser(loggedInUserUuid);
+        boolean isAdminUser = loggedInUser.isAdminUser();
+
+        if (!loggedInUserUuid.equals(customerOwningOrderUuid) && !isAdminUser) {
             throw new BusinessValidationException("You cannot delete an order that belongs to another customer unless you have admin rights.");
         }
 
@@ -134,19 +136,36 @@ public class OrderService {
     }
 
     @Transactional
-    public void changeOrderState(String orderUuid) {
+    public void changeOrderState(String orderUuid, OrderStateEnum orderState) {
         OrderT order = getActiveOrder(orderUuid);
 
-        if (OrderStateEnum.PENDING.equals(order.getOrderState())) {
-            order.setOrderState(OrderStateEnum.CONFIRMED);
-        }
-
-        if (OrderStateEnum.CONFIRMED.equals(order.getOrderState())) {
-            order.setOrderState(OrderStateEnum.SHIPPED);
-        }
-
-        if (OrderStateEnum.SHIPPED.equals(order.getOrderState())) {
-            order.setOrderState(OrderStateEnum.DELIVERED);
+        switch (orderState) {
+            case CONFIRMED -> {
+                if (OrderStateEnum.PENDING.equals(order.getOrderState())) {
+                    order.setOrderState(OrderStateEnum.CONFIRMED);
+                } else {
+                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                        .formatted(OrderStateEnum.PENDING, OrderStateEnum.CONFIRMED));
+                }
+            }
+            case SHIPPED -> {
+                if (OrderStateEnum.CONFIRMED.equals(order.getOrderState())) {
+                    order.setOrderState(OrderStateEnum.SHIPPED);
+                } else {
+                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                        .formatted(OrderStateEnum.CONFIRMED, OrderStateEnum.SHIPPED));
+                }
+            }
+            case DELIVERED -> {
+                if (OrderStateEnum.SHIPPED.equals(order.getOrderState())) {
+                    order.setOrderState(OrderStateEnum.DELIVERED);
+                } else {
+                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                        .formatted(OrderStateEnum.SHIPPED, OrderStateEnum.DELIVERED));
+                }
+            }
+            default -> throw new BusinessValidationException("Order state: %s is not a valid state".formatted(orderState));
         }
     }
+
 }
