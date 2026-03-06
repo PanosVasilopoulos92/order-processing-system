@@ -8,7 +8,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.viators.orderprocessingsystem.order.OrderService;
+import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
 import org.viators.orderprocessingsystem.user.dto.request.ChangePasswordRequest;
 import org.viators.orderprocessingsystem.user.dto.request.UpdateUserInfoRequest;
 import org.viators.orderprocessingsystem.user.dto.response.UserDetailsResponse;
@@ -20,6 +23,7 @@ import org.viators.orderprocessingsystem.user.dto.response.UserSummaryResponse;
 public class UserController {
 
     private final UserService userService;
+    private final OrderService orderService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
@@ -63,4 +67,5 @@ public class UserController {
         userService.changePassword(userUuid, request);
         return ResponseEntity.noContent().build();
     }
+
 }
