@@ -3,15 +3,12 @@ package org.viators.orderprocessingsystem.order;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
-import org.viators.orderprocessingsystem.user.UserT;
 
 import java.net.URI;
 
@@ -35,5 +32,18 @@ public class OrderController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @PutMapping("/{orderUuid}/cancel-order")
+    public ResponseEntity<Void> cancelOrder(@AuthenticationPrincipal(expression = "uuid") String loggedInUserUuid,
+                                            @PathVariable String orderUuid) {
+        orderService.cancelOrder(loggedInUserUuid, orderUuid);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{orderUuid}/change-order-state")
+    public ResponseEntity<Void> changeOrderState(@PathVariable String orderUuid) {
+        orderService.changeOrderState(orderUuid);
+        return ResponseEntity.noContent().build();
+    }
 
 }

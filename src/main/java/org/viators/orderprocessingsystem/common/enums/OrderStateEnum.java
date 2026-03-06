@@ -3,7 +3,7 @@ package org.viators.orderprocessingsystem.common.enums;
 import lombok.Getter;
 
 @Getter
-public enum OrderStatusEnum {
+public enum OrderStateEnum {
     PENDING,
     CONFIRMED,
     SHIPPED,

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.viators.orderprocessingsystem.common.enums.OrderStatusEnum;
+import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
@@ -32,6 +32,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final UserService userService;
     private final ProductService productService;
+    private final OrderItemService orderItemService;
 
     public OrderT getActiveOrder(String orderUuid) {
         return orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
@@ -84,7 +85,7 @@ public class OrderService {
             .map(orderItemT -> orderItemT.getProductPrice().multiply(BigDecimal.valueOf(orderItemT.getQuantity())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        order.setOrderStatus(OrderStatusEnum.PENDING);
+        order.setOrderState(OrderStateEnum.PENDING);
         order.setTotalAmount(totalAmount);
         order = orderRepository.save(order);
 
@@ -105,4 +106,47 @@ public class OrderService {
         }
     }
 
+    @Transactional
+    public void cancelOrder(String loggedInUserUuid, String orderUuid) {
+        OrderT order = getActiveOrder(orderUuid);
+        UserT customer = userService.getActiveUser(order.getCustomer().getUuid());
+        boolean isAdminUser = customer.isAdminUser();
+
+        validateEligibleCancellation(loggedInUserUuid, customer.getUuid(), isAdminUser, order.getOrderState());
+        order.setOrderState(OrderStateEnum.CANCELLED);
+
+        Set<OrderItemT> orderItems = orderItemService.getAllOrderItemsForOrderWithProducts(orderUuid);
+        orderItems.forEach(
+            orderItemT -> orderItemT.getProduct().setStockQuantity(
+                orderItemT.getProduct().getStockQuantity() + orderItemT.getQuantity())
+        );
+    }
+
+    public void validateEligibleCancellation(String loggedInCustomerUuid, String customerOwningOrderUuid, boolean isAdminUser, OrderStateEnum orderState) {
+        if (!loggedInCustomerUuid.equals(customerOwningOrderUuid) && !isAdminUser) {
+            throw new BusinessValidationException("You cannot delete an order that belongs to another customer unless you have admin rights.");
+        }
+
+        if (!OrderStateEnum.PENDING.equals(orderState) && !OrderStateEnum.CONFIRMED.equals(orderState)) {
+            throw new BusinessValidationException("Only orders in state %s and %s can be cancelled."
+                .formatted(OrderStateEnum.PENDING, OrderStateEnum.CONFIRMED));
+        }
+    }
+
+    @Transactional
+    public void changeOrderState(String orderUuid) {
+        OrderT order = getActiveOrder(orderUuid);
+
+        if (OrderStateEnum.PENDING.equals(order.getOrderState())) {
+            order.setOrderState(OrderStateEnum.CONFIRMED);
+        }
+
+        if (OrderStateEnum.CONFIRMED.equals(order.getOrderState())) {
+            order.setOrderState(OrderStateEnum.SHIPPED);
+        }
+
+        if (OrderStateEnum.SHIPPED.equals(order.getOrderState())) {
+            order.setOrderState(OrderStateEnum.DELIVERED);
+        }
+    }
 }
