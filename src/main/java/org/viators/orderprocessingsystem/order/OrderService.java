@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderItemService orderItemService;
     private final UserService userService;
     private final ProductService productService;
 
@@ -41,11 +40,17 @@ public class OrderService {
 
     @Transactional
     public OrderDetailsResponse create(String loggedInCustomer, CreateOrderRequest request) {
-        UserT customer = userService.getActiveUser(loggedInCustomer);
 
+        // Early guard
         Set<String> productUuids = request.orderItemRequests().stream()
             .map(CreateOrderItemRequest::productUuid)
             .collect(Collectors.toSet());
+
+        if (productUuids.size() != request.orderItemRequests().size()) {
+            throw new BusinessValidationException("Duplicate products are not allowed in the same order");
+        }
+
+        UserT customer = userService.getActiveUser(loggedInCustomer);
 
         Set<ProductT> productsInvolved = productService.getProductsInSet(productUuids);
         validateOrderAndReturnAffectedOrderItems(productsInvolved);
@@ -62,16 +67,21 @@ public class OrderService {
             ProductT product = productService.getActiveProduct(orderItemRequest.productUuid());
             orderItem.setQuantity(orderItemRequest.quantity());
             orderItem.setProductPrice(product.getPrice());
+            orderItem.setProductName(product.getName());
             orderItem.setProduct(product);
             orderItem.setOrder(order);
             orderItems.add(orderItem);
             order.addOrderItem(orderItem);
 
-            product.setStockQuantity(product.getStockQuantity().subtract(orderItem.getQuantity()));
+            product.setStockQuantity(product.getStockQuantity() - orderItem.getQuantity());
+            if (product.getStockQuantity() < 0) {
+                throw new BusinessValidationException(("Stock quantity for product with uuid: %s is insufficient. Available stock is %d")
+                    .formatted(product.getUuid(), product.getStockQuantity() + orderItem.getQuantity()));
+            }
         }
 
         BigDecimal totalAmount = orderItems.stream()
-            .map(orderItemT -> orderItemT.getProductPrice().multiply(orderItemT.getQuantity()))
+            .map(orderItemT -> orderItemT.getProductPrice().multiply(BigDecimal.valueOf(orderItemT.getQuantity())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         order.setOrderStatus(OrderStatusEnum.PENDING);
