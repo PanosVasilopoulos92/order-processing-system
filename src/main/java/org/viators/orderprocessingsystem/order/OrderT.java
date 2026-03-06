@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.viators.orderprocessingsystem.common.BaseEntity;
-import org.viators.orderprocessingsystem.common.enums.OrderStatusEnum;
+import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 import org.viators.orderprocessingsystem.user.UserT;
@@ -29,8 +29,8 @@ public class OrderT extends BaseEntity {
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "order_status")
-    private OrderStatusEnum orderStatus;
+    @Column(name = "order_state")
+    private OrderStateEnum orderState;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItemT> orderItems;
