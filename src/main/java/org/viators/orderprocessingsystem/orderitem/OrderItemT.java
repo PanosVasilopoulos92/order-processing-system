@@ -19,8 +19,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class OrderItemT extends BaseEntity {
 
+    @Column(name = "product_name", nullable = false)
+    private String productName;
+
     @Column(name = "quantity", nullable = false)
-    private BigDecimal quantity;
+    private Long quantity;
 
     @Column(name = "product_price", nullable = false)
     private BigDecimal productPrice;

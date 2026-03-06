@@ -8,6 +8,7 @@ import java.time.Instant;
 
 public record OrderItemSummaryResponse (
     String uuid,
+    String productName,
     StatusEnum status,
     Instant createdAt,
     BigDecimal productPrice
@@ -21,6 +22,7 @@ public record OrderItemSummaryResponse (
 
         return new OrderItemSummaryResponse(
             orderItem.getUuid(),
+            orderItem.getProductName(),
             orderItem.getStatus(),
             orderItem.getCreatedAt(),
             orderItem.getProductPrice()

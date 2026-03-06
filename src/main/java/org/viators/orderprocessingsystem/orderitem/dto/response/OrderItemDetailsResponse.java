@@ -8,23 +8,25 @@ import java.time.Instant;
 
 public record OrderItemDetailsResponse(
     String uuid,
-    StatusEnum status,
-    Instant createdAt,
+    String productName,
     BigDecimal quantity,
     BigDecimal productPrice,
     String productUuid,
-    String orderUuid
+    String orderUuid,
+    StatusEnum status,
+    Instant createdAt
 ) {
 
     public static OrderItemDetailsResponse from(OrderItemT orderItem) {
         return new OrderItemDetailsResponse(
             orderItem.getUuid(),
-            orderItem.getStatus(),
-            orderItem.getCreatedAt(),
+            orderItem.getProductName(),
             orderItem.getQuantity(),
             orderItem.getProductPrice(),
             orderItem.getProduct().getUuid(),
-            orderItem.getOrder().getUuid()
+            orderItem.getOrder().getUuid(),
+            orderItem.getStatus(),
+            orderItem.getCreatedAt()
         );
     }
 }
