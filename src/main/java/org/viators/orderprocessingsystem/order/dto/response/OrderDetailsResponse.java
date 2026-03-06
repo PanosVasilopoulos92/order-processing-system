@@ -1,6 +1,6 @@
 package org.viators.orderprocessingsystem.order.dto.response;
 
-import org.viators.orderprocessingsystem.common.enums.StatusEnum;
+import org.viators.orderprocessingsystem.common.enums.OrderStatusEnum;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.orderitem.dto.response.OrderItemSummaryResponse;
 
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public record OrderDetailsResponse(
     String orderUuid,
-    StatusEnum status,
+    OrderStatusEnum orderStatus,
     Instant createdAt,
     String shippingAddress,
     BigDecimal totalAmount,
@@ -23,7 +23,7 @@ public record OrderDetailsResponse(
     public static OrderDetailsResponse from(OrderT order) {
         return new OrderDetailsResponse(
             order.getUuid(),
-            order.getStatus(),
+            order.getOrderStatus(),
             order.getCreatedAt(),
             order.getShippingAddress(),
             order.getTotalAmount(),
