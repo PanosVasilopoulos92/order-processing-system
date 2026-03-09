@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
+import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
@@ -23,8 +24,6 @@ import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +37,7 @@ public class OrderService {
     private final UserService userService;
     private final ProductService productService;
     private final OrderItemService orderItemService;
+    private final OwnershipAuthorizationService ownershipAuthorizationService;
 
     public OrderT getActiveOrder(String orderUuid) {
         return orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
@@ -46,8 +46,12 @@ public class OrderService {
 
     public OrderDetailsResponse getOrderDetails(String customerUuid, String orderUuid) {
 
-        OrderT order = orderRepository.findByUuidAndCustomerWithOrderItems(customerUuid, orderUuid)
+        OrderT order = orderRepository.findByUuidAndCustomerWithOrderItemsAndCustomer(customerUuid, orderUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
+
+        if (!order.getCustomer().isAdminUser()) {
+            ownershipAuthorizationService.verifyOwnership(customerUuid, order.getUuid());
+        }
 
         return OrderDetailsResponse.from(order);
     }
