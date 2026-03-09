@@ -54,14 +54,17 @@ public class OrderController {
     }
 
 
+    @PreAuthorize("@userSecurity.isSelf(#userUuid) or hasRole('ADMIN')")
     @GetMapping("/history")
-    public ResponseEntity<Page<OrderSummaryResponse>> getOrdersHistoryPlacedByCustomer(@AuthenticationPrincipal(expression = "uuid") String customerUuid,
+    public ResponseEntity<Page<OrderSummaryResponse>> getOrdersHistoryPlacedByCustomer(@AuthenticationPrincipal(expression = "uuid") String userUuid,
+                                                                                       @RequestParam(required = false) OrderStateEnum orderState,
                                                                                        @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
                                                                                        Pageable pageable) {
-        Page<OrderSummaryResponse> response = orderService.getOrdersHistoryPlacedByCustomer(customerUuid, pageable);
+        Page<OrderSummaryResponse> response = orderService.getOrdersHistoryPlacedByCustomer(userUuid, orderState, pageable);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("@userSecurity.isSelf(#userUuid) or hasRole('ADMIN')")
     @GetMapping("/{orderUuid}/details")
     public ResponseEntity<OrderDetailsResponse> getOrderDetails(@AuthenticationPrincipal(expression = "uuid") String userUuid,
                                                                 @PathVariable String orderUuid) {
