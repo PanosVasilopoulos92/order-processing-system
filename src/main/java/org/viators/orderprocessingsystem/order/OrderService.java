@@ -44,6 +44,11 @@ public class OrderService {
             .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
     }
 
+    public OrderT getOrderForPayment(String orderUuid) {
+        return orderRepository.findByUuidAndOrderStateAndStatus(orderUuid, OrderStateEnum.PENDING, StatusEnum.ACTIVE)
+            .orElseThrow(() -> new BusinessValidationException("Payment can be created only for active orders in 'PENDING' state"));
+    }
+
     public OrderDetailsResponse getOrderDetails(String customerUuid, String orderUuid) {
 
         OrderT order = orderRepository.findByUuidAndCustomerWithOrderItemsAndCustomer(customerUuid, orderUuid)
