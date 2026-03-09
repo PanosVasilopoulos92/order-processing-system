@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
-import org.viators.orderprocessingsystem.exceptions.AccessDeniedException;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
@@ -24,6 +23,8 @@ import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,13 +46,8 @@ public class OrderService {
 
     public OrderDetailsResponse getOrderDetails(String customerUuid, String orderUuid) {
 
-        UserT customer = userService.getActiveUser(customerUuid);
-        OrderT order = orderRepository.findByUuidAndCustomer_Uuid(customerUuid, orderUuid)
+        OrderT order = orderRepository.findByUuidAndCustomerWithOrderItems(customerUuid, orderUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
-
-        if (!customerUuid.equals(order.getCustomer().getUuid()) && !customer.isAdminUser()) {
-            throw new AccessDeniedException();
-        }
 
         return OrderDetailsResponse.from(order);
     }
@@ -188,12 +184,11 @@ public class OrderService {
         }
     }
 
-    public Page<OrderSummaryResponse> getOrdersHistoryPlacedByCustomer(String customerUuid, Pageable pageable) {
+    public Page<OrderSummaryResponse> getOrdersHistoryPlacedByCustomer(String customerUuid, OrderStateEnum orderState, Pageable pageable) {
 
-        return orderRepository.findAllByCustomer_Uuid(customerUuid, pageable)
-            .map(orderT -> {
-                int numberOfOrderItems = orderItemService.numberOfOrderItemsForOrder(orderT.getUuid());
-                return OrderSummaryResponse.from(orderT, numberOfOrderItems);
-            });
+        return orderState != null
+            ? orderRepository.findOrderSummariesByCustomerUuidAndOrderState(customerUuid, orderState, pageable)
+            : orderRepository.findOrderSummariesByCustomerUuid(customerUuid, pageable);
     }
+
 }
