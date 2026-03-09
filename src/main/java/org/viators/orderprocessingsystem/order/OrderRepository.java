@@ -2,6 +2,7 @@ package org.viators.orderprocessingsystem.order;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,22 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<OrderT, Long> {
 
     Optional<OrderT> findByUuidAndStatus(String uuid, StatusEnum status);
+
+    @EntityGraph(attributePaths = {"customer", "payments"})
+    Optional<OrderT> findByUuidAndOrderStateAndStatus(String orderUuid, OrderStateEnum orderState, StatusEnum status);
+
+    @Deprecated
+//    @Query("""
+//            select o from OrderT o
+//            left join fetch o.customer c
+//            left join fetch o.payments p
+//            where o.uuid = :orderUuid
+//            and o.orderState = :orderState
+//            and o.status = :status
+//            """)
+//    Optional<OrderT> findOrderWithPayments(@Param("orderUuid") String orderUuid,
+//                                       @Param("orderState") OrderStateEnum orderState,
+//                                       @Param("status") StatusEnum status);
 
     @Query("""
             select o from OrderT o
