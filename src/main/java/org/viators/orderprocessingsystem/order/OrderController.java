@@ -64,7 +64,6 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("@userSecurity.isSelf(#userUuid) or hasRole('ADMIN')")
     @GetMapping("/{orderUuid}/details")
     public ResponseEntity<OrderDetailsResponse> getOrderDetails(@AuthenticationPrincipal(expression = "uuid") String userUuid,
                                                                 @PathVariable String orderUuid) {
