@@ -11,9 +11,11 @@ public interface OrderItemRepository extends JpaRepository<OrderItemT, Long> {
 
     @Query("""
            select oi from OrderItemT oi
-           join OrderT o
-           left join fetch ProductT p
+           join oi.order o
+           join fetch oi.product
            where o.uuid = :orderUuid
            """)
     Set<OrderItemT> findAllOrderItemsForOrderWithProducts(String orderUuid);
+
+    Integer countAllByOrder_Uuid(String orderUuid);
 }

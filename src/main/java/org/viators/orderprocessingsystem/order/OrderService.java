@@ -2,6 +2,8 @@ package org.viators.orderprocessingsystem.order;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
@@ -10,6 +12,7 @@ import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
+import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
 import org.viators.orderprocessingsystem.orderitem.OrderItemService;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
@@ -20,6 +23,8 @@ import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +42,14 @@ public class OrderService {
     public OrderT getActiveOrder(String orderUuid) {
         return orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
+    }
+
+    public OrderDetailsResponse getOrderDetails(String customerUuid, String orderUuid) {
+
+        OrderT order = orderRepository.findByUuidAndCustomerWithOrderItems(customerUuid, orderUuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
+
+        return OrderDetailsResponse.from(order);
     }
 
     @Transactional
@@ -108,8 +121,8 @@ public class OrderService {
 
     @Transactional
     public void cancelOrder(String loggedInUserUuid, String orderUuid) {
-        OrderT order = getActiveOrder(orderUuid);
 
+        OrderT order = getActiveOrder(orderUuid);
 
         validateEligibleCancellation(loggedInUserUuid, order.getCustomer().getUuid(), order.getOrderState());
         order.setOrderState(OrderStateEnum.CANCELLED);
@@ -122,6 +135,7 @@ public class OrderService {
     }
 
     public void validateEligibleCancellation(String loggedInUserUuid, String customerOwningOrderUuid, OrderStateEnum orderState) {
+
         UserT loggedInUser = userService.getActiveUser(loggedInUserUuid);
         boolean isAdminUser = loggedInUser.isAdminUser();
 
@@ -137,6 +151,7 @@ public class OrderService {
 
     @Transactional
     public void changeOrderState(String orderUuid, OrderStateEnum orderState) {
+
         OrderT order = getActiveOrder(orderUuid);
 
         switch (orderState) {
@@ -164,8 +179,16 @@ public class OrderService {
                         .formatted(OrderStateEnum.SHIPPED, OrderStateEnum.DELIVERED));
                 }
             }
-            default -> throw new BusinessValidationException("Order state: %s is not a valid state".formatted(orderState));
+            default ->
+                throw new BusinessValidationException("Order state: %s is not a valid state".formatted(orderState));
         }
+    }
+
+    public Page<OrderSummaryResponse> getOrdersHistoryPlacedByCustomer(String customerUuid, OrderStateEnum orderState, Pageable pageable) {
+
+        return orderState != null
+            ? orderRepository.findOrderSummariesByCustomerUuidAndOrderState(customerUuid, orderState, pageable)
+            : orderRepository.findOrderSummariesByCustomerUuid(customerUuid, pageable);
     }
 
 }
