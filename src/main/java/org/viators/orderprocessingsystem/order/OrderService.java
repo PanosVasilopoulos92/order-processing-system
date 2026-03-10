@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
+import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
@@ -17,6 +18,8 @@ import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse
 import org.viators.orderprocessingsystem.orderitem.OrderItemService;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
+import org.viators.orderprocessingsystem.payment.PaymentQueryService;
+import org.viators.orderprocessingsystem.payment.PaymentT;
 import org.viators.orderprocessingsystem.product.ProductService;
 import org.viators.orderprocessingsystem.product.ProductT;
 import org.viators.orderprocessingsystem.user.UserService;
@@ -37,6 +40,7 @@ public class OrderService {
     private final UserService userService;
     private final ProductService productService;
     private final OrderItemService orderItemService;
+    private final PaymentQueryService paymentQueryService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
 
     public OrderT getActiveOrder(String orderUuid) {
@@ -58,7 +62,15 @@ public class OrderService {
             ownershipAuthorizationService.verifyOwnership(customerUuid, order.getUuid());
         }
 
-        return OrderDetailsResponse.from(order);
+        Set<PaymentT> payments = paymentQueryService.getAllPaymentsForOrder(orderUuid);
+
+        PaymentStateEnum paymentState = payments.stream()
+            .map(PaymentT::getPaymentState)
+            .filter(PaymentStateEnum.SUCCESS::equals)
+            .findFirst()
+            .orElse(payments.isEmpty() ? PaymentStateEnum.PENDING : PaymentStateEnum.FAILED);
+
+        return OrderDetailsResponse.from(order, paymentState);
     }
 
     @Transactional
@@ -111,7 +123,7 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order = orderRepository.save(order);
 
-        return OrderDetailsResponse.from(order);
+        return OrderDetailsResponse.from(order, PaymentStateEnum.PENDING);
     }
 
     private void validateOrderAndReturnAffectedOrderItems(Set<ProductT> productsInvolved) {
@@ -161,36 +173,56 @@ public class OrderService {
     @Transactional
     public void changeOrderState(String orderUuid, OrderStateEnum orderState) {
 
-        OrderT order = getActiveOrder(orderUuid);
+        OrderT order = orderRepository.findOrderWithPayments(orderUuid, StatusEnum.ACTIVE)
+            .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
 
         switch (orderState) {
-            case CONFIRMED -> {
-                if (OrderStateEnum.PENDING.equals(order.getOrderState())) {
-                    order.setOrderState(OrderStateEnum.CONFIRMED);
-                } else {
-                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
-                        .formatted(OrderStateEnum.PENDING, OrderStateEnum.CONFIRMED));
-                }
-            }
-            case SHIPPED -> {
-                if (OrderStateEnum.CONFIRMED.equals(order.getOrderState())) {
-                    order.setOrderState(OrderStateEnum.SHIPPED);
-                } else {
-                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
-                        .formatted(OrderStateEnum.CONFIRMED, OrderStateEnum.SHIPPED));
-                }
-            }
-            case DELIVERED -> {
-                if (OrderStateEnum.SHIPPED.equals(order.getOrderState())) {
-                    order.setOrderState(OrderStateEnum.DELIVERED);
-                } else {
-                    throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
-                        .formatted(OrderStateEnum.SHIPPED, OrderStateEnum.DELIVERED));
-                }
-            }
+            case CONFIRMED -> handlePendingToConfirmedState(order);
+            case SHIPPED -> handleConfirmedToShippedState(order);
+            case DELIVERED -> handleShippedToDeliveredState(order);
             default ->
                 throw new BusinessValidationException("Order state: %s is not a valid state".formatted(orderState));
         }
+    }
+
+    private void handlePendingToConfirmedState(OrderT order) {
+
+        if (OrderStateEnum.PENDING.equals(order.getOrderState())) {
+            if (!verifyPaymentWasSuccessful(order)) {
+                throw new BusinessValidationException("Order cannot proceed to next state because there was no payment found for it");
+            }
+            order.setOrderState(OrderStateEnum.CONFIRMED);
+        } else {
+            throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                .formatted(OrderStateEnum.PENDING, OrderStateEnum.CONFIRMED));
+        }
+    }
+
+    private void handleConfirmedToShippedState(OrderT order) {
+
+        if (OrderStateEnum.CONFIRMED.equals(order.getOrderState())) {
+            order.setOrderState(OrderStateEnum.SHIPPED);
+        } else {
+            throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                .formatted(OrderStateEnum.CONFIRMED, OrderStateEnum.SHIPPED));
+        }
+    }
+
+    private void handleShippedToDeliveredState(OrderT order) {
+
+        if (OrderStateEnum.SHIPPED.equals(order.getOrderState())) {
+            order.setOrderState(OrderStateEnum.DELIVERED);
+        } else {
+            throw new BusinessValidationException("Order from state: %s can transition only to state: %s"
+                .formatted(OrderStateEnum.SHIPPED, OrderStateEnum.DELIVERED));
+        }
+    }
+
+    private boolean verifyPaymentWasSuccessful(OrderT order) {
+
+        return order.getPayments().stream()
+            .map(PaymentT::getPaymentState)
+            .anyMatch(PaymentStateEnum.SUCCESS::equals);
     }
 
     public Page<OrderSummaryResponse> getOrdersHistoryPlacedByCustomer(String customerUuid, OrderStateEnum orderState, Pageable pageable) {

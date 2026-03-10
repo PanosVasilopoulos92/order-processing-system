@@ -10,7 +10,8 @@ public record OrderSummaryResponse(
     OrderStateEnum orderState,
     BigDecimal totalAmount,
     Integer numberOfItems,
-    Instant createdAt
+    Instant createdAt,
+    boolean isPaid
 ) {
 }
 
