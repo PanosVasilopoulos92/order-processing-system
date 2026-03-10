@@ -24,6 +24,11 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    public UserT getActiveUser(String userUuid) {
+        return userRepository.findByUuidAndStatus(userUuid, StatusEnum.ACTIVE)
+            .orElseThrow(() -> new ResourceNotFoundException("User/Customer", "uuid", userUuid));
+    }
+
     public UserDetailsResponse getUser(String userUuid) {
         UserT user = userRepository.findByUuid(userUuid)
             .orElseThrow(() -> new ResourceNotFoundException("User", "uuid", userUuid));
