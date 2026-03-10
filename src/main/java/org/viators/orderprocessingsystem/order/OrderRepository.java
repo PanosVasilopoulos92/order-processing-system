@@ -21,18 +21,13 @@ public interface OrderRepository extends JpaRepository<OrderT, Long> {
     @EntityGraph(attributePaths = {"customer", "payments"})
     Optional<OrderT> findByUuidAndOrderStateAndStatus(String orderUuid, OrderStateEnum orderState, StatusEnum status);
 
-    @Deprecated
-//    @Query("""
-//            select o from OrderT o
-//            left join fetch o.customer c
-//            left join fetch o.payments p
-//            where o.uuid = :orderUuid
-//            and o.orderState = :orderState
-//            and o.status = :status
-//            """)
-//    Optional<OrderT> findOrderWithPayments(@Param("orderUuid") String orderUuid,
-//                                       @Param("orderState") OrderStateEnum orderState,
-//                                       @Param("status") StatusEnum status);
+    @Query("""
+            select o from OrderT o
+            left join fetch o.payments p
+            where o.uuid = :orderUuid
+            and o.status = :status
+            """)
+    Optional<OrderT> findOrderWithPayments(@Param("orderUuid") String orderUuid, @Param("status") StatusEnum status);
 
     @Query("""
             select o from OrderT o
@@ -46,7 +41,7 @@ public interface OrderRepository extends JpaRepository<OrderT, Long> {
 
     @Query(value = """
             select new org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse(
-                o.uuid, o.orderState, o.totalAmount, size(o.orderItems), o.createdAt
+                o.uuid, o.orderState, o.totalAmount, size(o.orderItems), o.createdAt, o.isPaid
             ) from OrderT o
             where o.customer.uuid = :customerUuid
             group by o.uuid, o.orderState, o.totalAmount, o.createdAt
@@ -60,7 +55,7 @@ public interface OrderRepository extends JpaRepository<OrderT, Long> {
 
     @Query(value = """
             select new org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse(
-                o.uuid, o.orderState, o.totalAmount, size(o.orderItems) , o.createdAt
+                o.uuid, o.orderState, o.totalAmount, size(o.orderItems) , o.createdAt, o.isPaid
             ) from OrderT o
             where o.customer.uuid = :customerUuid and o.orderState = :orderState
             group by o.uuid, o.orderState, o.totalAmount, o.createdAt

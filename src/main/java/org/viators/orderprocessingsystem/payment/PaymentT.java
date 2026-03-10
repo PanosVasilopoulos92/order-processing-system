@@ -38,4 +38,15 @@ public class PaymentT extends BaseEntity {
     @JoinColumn(name = "order_id", nullable = false, updatable = false)
     private OrderT order;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PaymentT that)) return false;
+        return getUuid() != null && getUuid().equals(that.getUuid());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

@@ -1,6 +1,7 @@
 package org.viators.orderprocessingsystem.order.dto.response;
 
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
+import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.orderitem.dto.response.OrderItemSummaryResponse;
 
@@ -17,10 +18,11 @@ public record OrderDetailsResponse(
     String shippingAddress,
     BigDecimal totalAmount,
     Set<OrderItemSummaryResponse> orderItems,
-    String customerUuid
+    String customerUuid,
+    PaymentStateEnum paymentState
 ) {
 
-    public static OrderDetailsResponse from(OrderT order) {
+    public static OrderDetailsResponse from(OrderT order, PaymentStateEnum paymentState) {
         return new OrderDetailsResponse(
             order.getUuid(),
             order.getOrderState(),
@@ -31,7 +33,8 @@ public record OrderDetailsResponse(
                 .filter(Objects::nonNull)
                 .map(OrderItemSummaryResponse::from)
                 .collect(Collectors.toSet()),
-            order.getCustomer().getUuid()
+            order.getCustomer().getUuid(),
+            paymentState
         );
     }
 
