@@ -8,7 +8,7 @@ public record CreatePaymentRequest(
     @NotBlank(message = "Order uuid is required")
     String orderUuid,
 
-    @NotNull
+    @NotNull(message = "Payment method is required")
     PaymentMethodEnum paymentMethod
 ) {
 }

@@ -2,16 +2,21 @@ package org.viators.orderprocessingsystem.payment;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.PaymentMethodEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
+import org.viators.orderprocessingsystem.common.enums.PaymentTypeEnum;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
-import org.viators.orderprocessingsystem.order.OrderService;
+import org.viators.orderprocessingsystem.order.OrderQueryService;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.payment.dto.request.CreatePaymentRequest;
 import org.viators.orderprocessingsystem.payment.dto.response.PaymentDetailsResponse;
+import org.viators.orderprocessingsystem.user.UserService;
+import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
 
@@ -22,12 +27,13 @@ import java.math.BigDecimal;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final OrderService orderService;
+    private final OrderQueryService orderQueryService;
+    private final UserService userService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
 
     @Transactional
     public PaymentDetailsResponse create(String customerUuid, CreatePaymentRequest request) {
-        OrderT order = orderService.getOrderForPayment(request.orderUuid());
+        OrderT order = orderQueryService.getOrderForPayment(request.orderUuid());
 
         ownershipAuthorizationService.verifyOwnership(customerUuid, order.getCustomer().getUuid());
         for (PaymentT payment : order.getPayments()) {
@@ -39,6 +45,7 @@ public class PaymentService {
         PaymentT payment = new PaymentT();
         payment.setPaymentMethod(request.paymentMethod());
         payment.setAmount(order.getTotalAmount());
+        payment.setPaymentType(PaymentTypeEnum.PAYMENT);
 
         // Todo:  currently we use a simulation to decide success or failure of payment
         if (simulateSuccessFailOfPayment(request.paymentMethod(), order.getTotalAmount())) {
@@ -60,5 +67,36 @@ public class PaymentService {
             case PaymentMethodEnum.CREDIT_CARD, PaymentMethodEnum.DEBIT_CARD -> true;
             case PaymentMethodEnum.BANK_TRANSFER -> amount.compareTo(new BigDecimal("500")) < 0;
         };
+    }
+
+    public Page<PaymentDetailsResponse> getHistoryOfPaymentsForOrder(String loggedInUserUuid, String orderUuid, Pageable pageable) {
+        OrderT order = orderQueryService.getActiveOrder(orderUuid);
+        UserT user = userService.getActiveUser(loggedInUserUuid);
+
+        if (!user.isAdminUser()) {
+            ownershipAuthorizationService.verifyOwnership(loggedInUserUuid, order.getCustomer().getUuid());
+        }
+
+        return paymentRepository.findAllByOrder_Uuid(orderUuid, pageable)
+            .map(PaymentDetailsResponse::from);
+    }
+
+    @Transactional
+    public void refundOrderPayment(OrderT order) {
+        PaymentT successfulPayment = paymentRepository.findByOrder_UuidAndPaymentState(order.getUuid(), PaymentStateEnum.SUCCESS)
+            .orElse(null);
+
+        if (successfulPayment != null) {
+            successfulPayment.setPaymentState(PaymentStateEnum.REFUNDED);
+
+            PaymentT refundPayment = new PaymentT();
+            refundPayment.setPaymentType(PaymentTypeEnum.REFUND);
+            refundPayment.setPaymentState(PaymentStateEnum.SUCCESS);
+            refundPayment.setAmount(successfulPayment.getAmount());
+            refundPayment.setRefundPayment(successfulPayment);
+            refundPayment.setPaymentMethod(successfulPayment.getPaymentMethod());
+            order.addPayment(refundPayment);
+        }
+
     }
 }

@@ -16,8 +16,4 @@ public class OrderItemService {
     public Set<OrderItemT> getAllOrderItemsForOrderWithProducts(String orderUuid) {
         return orderItemRepository.findAllOrderItemsForOrderWithProducts(orderUuid);
     }
-
-    public Integer numberOfOrderItemsForOrder(String orderUuid) {
-        return orderItemRepository.countAllByOrder_Uuid(orderUuid);
-    }
 }

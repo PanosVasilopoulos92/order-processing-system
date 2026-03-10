@@ -16,6 +16,7 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<OrderT, Long> {
 
+    @EntityGraph(attributePaths = {"customer"})
     Optional<OrderT> findByUuidAndStatus(String uuid, StatusEnum status);
 
     @EntityGraph(attributePaths = {"customer", "payments"})
