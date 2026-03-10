@@ -10,6 +10,12 @@ spring:
         default-page-size: 20
         max-page-size: 100
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
 application:
   security:
     jwt:
