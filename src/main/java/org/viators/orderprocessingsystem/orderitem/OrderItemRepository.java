@@ -12,7 +12,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItemT, Long> {
     @Query("""
            select oi from OrderItemT oi
            join oi.order o
-           join fetch oi.product
+           left join fetch oi.product
            where o.uuid = :orderUuid
            """)
     Set<OrderItemT> findAllOrderItemsForOrderWithProducts(String orderUuid);

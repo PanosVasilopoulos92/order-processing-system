@@ -19,6 +19,7 @@ import org.viators.orderprocessingsystem.orderitem.OrderItemService;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
 import org.viators.orderprocessingsystem.payment.PaymentQueryService;
+import org.viators.orderprocessingsystem.payment.PaymentService;
 import org.viators.orderprocessingsystem.payment.PaymentT;
 import org.viators.orderprocessingsystem.product.ProductService;
 import org.viators.orderprocessingsystem.product.ProductT;
@@ -41,16 +42,12 @@ public class OrderService {
     private final ProductService productService;
     private final OrderItemService orderItemService;
     private final PaymentQueryService paymentQueryService;
+    private final PaymentService paymentService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
 
     public OrderT getActiveOrder(String orderUuid) {
         return orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Order", "uuid", orderUuid));
-    }
-
-    public OrderT getOrderForPayment(String orderUuid) {
-        return orderRepository.findByUuidAndOrderStateAndStatus(orderUuid, OrderStateEnum.PENDING, StatusEnum.ACTIVE)
-            .orElseThrow(() -> new BusinessValidationException("Payment can be created only for active orders in 'PENDING' state"));
     }
 
     public OrderDetailsResponse getOrderDetails(String customerUuid, String orderUuid) {
@@ -148,11 +145,14 @@ public class OrderService {
         validateEligibleCancellation(loggedInUserUuid, order.getCustomer().getUuid(), order.getOrderState());
         order.setOrderState(OrderStateEnum.CANCELLED);
 
+
         Set<OrderItemT> orderItems = orderItemService.getAllOrderItemsForOrderWithProducts(orderUuid);
-        orderItems.forEach(
+        orderItems .forEach(
             orderItemT -> orderItemT.getProduct().setStockQuantity(
                 orderItemT.getProduct().getStockQuantity() + orderItemT.getQuantity())
         );
+
+        paymentService.refundOrderPayment(order);
     }
 
     public void validateEligibleCancellation(String loggedInUserUuid, String customerOwningOrderUuid, OrderStateEnum orderState) {

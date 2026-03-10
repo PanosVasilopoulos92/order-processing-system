@@ -15,6 +15,8 @@ import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
 import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
+import org.viators.orderprocessingsystem.payment.PaymentService;
+import org.viators.orderprocessingsystem.payment.dto.response.PaymentDetailsResponse;
 
 import java.net.URI;
 
@@ -24,6 +26,7 @@ import java.net.URI;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
     @PostMapping
     public ResponseEntity<OrderDetailsResponse> create(@AuthenticationPrincipal(expression = "uuid") String customerUuid,
@@ -54,20 +57,30 @@ public class OrderController {
     }
 
 
-    @PreAuthorize("@userSecurity.isSelf(#userUuid) or hasRole('ADMIN')")
+    @PreAuthorize("@userSecurity.isSelf(#loggedInUserUuid) or hasRole('ADMIN')")
     @GetMapping("/history")
-    public ResponseEntity<Page<OrderSummaryResponse>> getOrdersHistoryPlacedByCustomer(@AuthenticationPrincipal(expression = "uuid") String userUuid,
+    public ResponseEntity<Page<OrderSummaryResponse>> getOrdersHistoryPlacedByCustomer(@AuthenticationPrincipal(expression = "uuid") String loggedInUserUuid,
                                                                                        @RequestParam(required = false) OrderStateEnum orderState,
                                                                                        @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC)
                                                                                        Pageable pageable) {
-        Page<OrderSummaryResponse> response = orderService.getOrdersHistoryPlacedByCustomer(userUuid, orderState, pageable);
+        Page<OrderSummaryResponse> response = orderService.getOrdersHistoryPlacedByCustomer(loggedInUserUuid, orderState, pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{orderUuid}/details")
-    public ResponseEntity<OrderDetailsResponse> getOrderDetails(@AuthenticationPrincipal(expression = "uuid") String userUuid,
+    public ResponseEntity<OrderDetailsResponse> getOrderDetails(@AuthenticationPrincipal(expression = "uuid") String loggedInUserUuid,
                                                                 @PathVariable String orderUuid) {
-        OrderDetailsResponse response = orderService.getOrderDetails(userUuid, orderUuid);
+        OrderDetailsResponse response = orderService.getOrderDetails(loggedInUserUuid, orderUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{orderUuid}/payments-history")
+    public ResponseEntity<Page<PaymentDetailsResponse>> getHistoryOfPaymentsForOrder(@AuthenticationPrincipal(expression = "uuid") String loggedInUserUuid,
+                                                                                     @PathVariable("orderUuid") String orderUuid,
+                                                                                     @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+                                                                                     Pageable pageable) {
+
+        Page<PaymentDetailsResponse> response = paymentService.getHistoryOfPaymentsForOrder(loggedInUserUuid, orderUuid, pageable);
         return ResponseEntity.ok(response);
     }
 }
