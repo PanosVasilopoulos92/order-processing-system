@@ -43,6 +43,7 @@ public class PaymentService {
         // Todo:  currently we use a simulation to decide success or failure of payment
         if (simulateSuccessFailOfPayment(request.paymentMethod(), order.getTotalAmount())) {
             payment.setPaymentState(PaymentStateEnum.SUCCESS);
+            order.setIsPaid(true);
         } else {
             payment.setPaymentState(PaymentStateEnum.FAILED);
             payment.setFailureReason("Payment failed because it was made through bank transfer and the amount was more than 500");

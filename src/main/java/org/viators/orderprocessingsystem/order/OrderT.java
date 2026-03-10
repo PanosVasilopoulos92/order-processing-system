@@ -34,14 +34,20 @@ public class OrderT extends BaseEntity {
     @Column(name = "order_state")
     private OrderStateEnum orderState;
 
+    @Column(name = "is_paid")
+    @Builder.Default
+    private Boolean isPaid = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", referencedColumnName = "id", nullable = false)
     private UserT customer;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private Set<OrderItemT> orderItems = new HashSet<>();
 
     @OneToMany(mappedBy = "order", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private Set<PaymentT> payments = new HashSet<>();
 
     // Helper methods
