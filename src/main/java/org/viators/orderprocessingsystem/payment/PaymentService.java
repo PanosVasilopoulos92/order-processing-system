@@ -2,6 +2,7 @@ package org.viators.orderprocessingsystem.payment;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -10,7 +11,10 @@ import org.viators.orderprocessingsystem.common.enums.PaymentMethodEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentTypeEnum;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
+import org.viators.orderprocessingsystem.config.RabbitMQConfig;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
+import org.viators.orderprocessingsystem.messaging.event.PaymentEvent;
+import org.viators.orderprocessingsystem.messaging.event.PaymentProcessedEvent;
 import org.viators.orderprocessingsystem.order.OrderQueryService;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.payment.dto.request.CreatePaymentRequest;
@@ -30,6 +34,9 @@ public class PaymentService {
     private final OrderQueryService orderQueryService;
     private final UserService userService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
+
+    // Event Publishing
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public PaymentDetailsResponse create(String customerUuid, CreatePaymentRequest request) {
@@ -58,6 +65,24 @@ public class PaymentService {
 
         order.addPayment(payment);
         payment = paymentRepository.save(payment);
+
+        String routingKey = PaymentStateEnum.SUCCESS.equals(payment.getPaymentState())
+            ? RabbitMQConfig.PAYMENT_SUCCESS_KEY
+            : RabbitMQConfig.PAYMENT_FAILED_KEY;
+
+        applicationEventPublisher.publishEvent(new PaymentProcessedEvent(
+            PaymentEvent.of(
+                "PAYMENT_" + payment.getPaymentState().name(),
+                payment.getUuid(),
+                order.getUuid(),
+                order.getCustomer().getUuid(),
+                order.getCustomer().getEmail(),
+                payment.getPaymentState().name(),
+                payment.getAmount(),
+                payment.getPaymentMethod().name(),
+                payment.getFailureReason()
+            ), routingKey
+        ));
 
         return PaymentDetailsResponse.from(payment);
     }
