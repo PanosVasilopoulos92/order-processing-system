@@ -9,7 +9,7 @@ import java.time.Instant;
 public record OrderItemDetailsResponse(
     String uuid,
     String productName,
-    BigDecimal quantity,
+    Long quantity,
     BigDecimal productPrice,
     String productUuid,
     String orderUuid,
