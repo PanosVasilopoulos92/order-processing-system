@@ -2,6 +2,7 @@ package org.viators.orderprocessingsystem.order;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -10,8 +11,12 @@ import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
 import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
+import org.viators.orderprocessingsystem.config.RabbitMQConfig;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
+import org.viators.orderprocessingsystem.messaging.event.OrderEvent;
+import org.viators.orderprocessingsystem.messaging.event.OrderPlacedEvent;
+import org.viators.orderprocessingsystem.messaging.event.OrderStateChangedEvent;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
 import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
@@ -44,6 +49,9 @@ public class OrderService {
     private final PaymentQueryService paymentQueryService;
     private final PaymentService paymentService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
+
+    // Event publishing
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public OrderT getActiveOrder(String orderUuid) {
         return orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
@@ -120,6 +128,19 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         order = orderRepository.save(order);
 
+        applicationEventPublisher.publishEvent(
+            new OrderPlacedEvent(
+                OrderEvent.of(
+                    "ORDER_PLACED",
+                    order.getUuid(),
+                    customer.getUuid(),
+                    customer.getEmail(),
+                    order.getOrderState().name(),
+                    order.getTotalAmount()
+                )
+            )
+        );
+
         return OrderDetailsResponse.from(order, PaymentStateEnum.PENDING);
     }
 
@@ -153,6 +174,18 @@ public class OrderService {
         );
 
         paymentService.refundOrderPayment(order);
+
+        applicationEventPublisher.publishEvent(new OrderStateChangedEvent(
+            OrderEvent.of(
+                "ORDER_CANCELLED",
+                    order.getUuid(),
+                order.getCustomer().getUuid(),
+                order.getCustomer().getEmail(),
+                OrderStateEnum.CANCELLED.name(),
+                order.getTotalAmount()
+            ),
+            RabbitMQConfig.ORDER_CANCELLED_KEY
+        ));
     }
 
     public void validateEligibleCancellation(String loggedInUserUuid, String customerOwningOrderUuid, OrderStateEnum orderState) {
@@ -182,6 +215,27 @@ public class OrderService {
             case DELIVERED -> handleShippedToDeliveredState(order);
             default ->
                 throw new BusinessValidationException("Order state: %s is not a valid state".formatted(orderState));
+        }
+
+        // Publish event section
+        String routingKey = switch (order.getOrderState()) {
+            case CONFIRMED -> RabbitMQConfig.ORDER_CONFIRMED_KEY;
+            case SHIPPED -> RabbitMQConfig.ORDER_SHIPPED_KEY;
+            case DELIVERED -> RabbitMQConfig.ORDER_DELIVERED_KEY;
+            default -> null;
+        };
+
+        if (routingKey != null) {
+            applicationEventPublisher.publishEvent(new OrderStateChangedEvent(
+                OrderEvent.of(
+                    "ORDER_" + order.getOrderState().name(),
+                    order.getUuid(),
+                    order.getCustomer().getUuid(),
+                    order.getCustomer().getEmail(),
+                    order.getOrderState().name(),
+                    order.getTotalAmount()
+                ), routingKey
+            ));
         }
     }
 

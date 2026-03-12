@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: ops-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?error}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?error}
+      MYSQL_USER: ${MYSQL_USER:?error}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?error}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+ # ── RabbitMQ 3 with Management UI ──────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ops-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol port (your app connects here)
+      - "15672:15672"   # Management UI (you browse here)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?error}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?error}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+ # ── MailHog (optional — development email testing) ─────────────
+  mailhog:
+    image: mailhog/mailhog
+    container_name: ops-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+# ── Named Volumes ─────────────────────────────────────────────────
+# Declared here so Docker manages their lifecycle independently
+# of the containers. Data survives container recreation.
+volumes:
+  mysql_data:
+  rabbitmq_data:
