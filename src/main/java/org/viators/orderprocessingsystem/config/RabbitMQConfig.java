@@ -1,9 +1,9 @@
 package org.viators.orderprocessingsystem.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.converter.JacksonJsonMessageConverter;
 
 @Configuration
 public class RabbitMQConfig {
@@ -37,11 +37,13 @@ public class RabbitMQConfig {
     // Each binding tells the exchange: "when you see a message
     // with this routing key pattern, put it in this queue"
 
+    @Bean
     public Binding notificationOrderBinding(Queue notificationQueue, TopicExchange orderExchange) {
         // "order.*" matches order.placed, order.confirmed, etc.
         return BindingBuilder.bind(notificationQueue).to(orderExchange).with("order.*");
     }
 
+    @Bean
     public Binding notificationPaymentBinding(Queue notificationQueue, TopicExchange orderExchange) {
         // "payment.*" matches payment.success, payment.failed
         return BindingBuilder.bind(notificationQueue).to(orderExchange).with("payment.*");
