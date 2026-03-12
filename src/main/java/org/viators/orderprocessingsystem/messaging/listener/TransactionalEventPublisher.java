@@ -31,6 +31,7 @@ public class TransactionalEventPublisher {
         );
     }
 
+    @TransactionalEventListener
     public void handlePaymentProcessed(PaymentProcessedEvent event) {
         orderEventPublisher.publishPaymentEvent(
             event.paymentEvent(), event.routingKey()
