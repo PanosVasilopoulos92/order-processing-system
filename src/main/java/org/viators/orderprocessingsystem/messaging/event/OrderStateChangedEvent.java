@@ -1,4 +1,7 @@
 package org.viators.orderprocessingsystem.messaging.event;
 
-public record OrderStateChangedEvent(OrderEvent orderEvent, String routingKey) {
+public record OrderStateChangedEvent(
+    OrderEvent orderEvent,
+    String routingKey
+) {
 }
