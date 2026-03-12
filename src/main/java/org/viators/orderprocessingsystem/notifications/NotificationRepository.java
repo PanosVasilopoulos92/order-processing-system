@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface NotificationRepository extends JpaRepository<NotificationT, Long> {
 
-    Optional<NotificationT> findByUuid(String uuid);
+    Optional<NotificationT> findByUuid(String notificationUuid);
 
     Page<NotificationT> findAllByCustomerUuid(String customerUuid, Pageable pageable);
 
