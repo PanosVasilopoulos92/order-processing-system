@@ -139,6 +139,7 @@ public class NotificationService {
         return switch (type) {
             case PAYMENT_SUCCESS -> "Payment Received - " + orderUuid;
             case PAYMENT_FAILED -> "Payment Failed - " + orderUuid;
+            case PAYMENT_REFUNDED -> "Payment Refunded - " + orderUuid;
             default -> "Payment Update - " + orderUuid;
         };
     }
@@ -147,12 +148,15 @@ public class NotificationService {
                                        BigDecimal amount, String failureReason) {
         return switch (type) {
             case PAYMENT_SUCCESS ->
-                "Payment of %s received for order %s."
+                "Payment of %s received for order: %s."
                     .formatted(amount, orderUuid);
             case PAYMENT_FAILED ->
-                "Payment for order %s failed. Reason: %s"
+                "Payment for order %s failed. Reason: %s."
                     .formatted(orderUuid,
                         failureReason != null ? failureReason : "Unknown");
+            case PAYMENT_REFUNDED ->
+                "Refund of %s euros created for order: %s."
+                    .formatted(amount, orderUuid);
             default ->
                 "There's an update on your payment for order %s."
                     .formatted(orderUuid);

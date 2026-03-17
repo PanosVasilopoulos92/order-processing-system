@@ -1,6 +1,6 @@
 package org.viators.orderprocessingsystem.messaging.event;
 
-public record PaymentProcessedEvent(
+public record RefundPaymentEvent(
     PaymentEvent paymentEvent,
     String routingKey
 ) {
