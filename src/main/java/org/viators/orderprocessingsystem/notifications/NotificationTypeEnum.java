@@ -7,5 +7,6 @@ public enum NotificationTypeEnum {
     ORDER_DELIVERED,
     ORDER_CANCELLED,
     PAYMENT_SUCCESS,
-    PAYMENT_FAILED
+    PAYMENT_FAILED,
+    PAYMENT_REFUNDED
 }

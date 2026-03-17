@@ -14,7 +14,7 @@ import org.viators.orderprocessingsystem.notifications.NotificationService;
 @RequiredArgsConstructor
 @Slf4j
 @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
-public class OrderNotificationListener {
+public class NotificationListener {
 
     private final NotificationService notificationService;
 

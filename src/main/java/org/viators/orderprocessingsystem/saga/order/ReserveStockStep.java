@@ -45,7 +45,7 @@ public class ReserveStockStep implements SagaStep {
     public void execute() throws Exception {
         for (var item : request.orderItemRequests()) {
             long deductedQuantity = productService.reduceStock(item.productUuid(), item.quantity());
-            deductedQuantities.put(item.productUuid(), item.quantity());
+            deductedQuantities.put(item.productUuid(), deductedQuantity);
             log.debug("[ReserveStockStep] Reserved {} unit(s) of product {}",
                 deductedQuantity, item.productUuid());
         }
