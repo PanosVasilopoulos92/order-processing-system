@@ -8,7 +8,9 @@ import org.viators.orderprocessingsystem.config.RabbitMQConfig;
 import org.viators.orderprocessingsystem.messaging.event.OrderPlacedEvent;
 import org.viators.orderprocessingsystem.messaging.event.OrderStateChangedEvent;
 import org.viators.orderprocessingsystem.messaging.event.PaymentProcessedEvent;
+import org.viators.orderprocessingsystem.messaging.event.RefundPaymentEvent;
 import org.viators.orderprocessingsystem.messaging.publisher.OrderEventPublisher;
+import org.viators.orderprocessingsystem.messaging.publisher.PaymentEventPublisher;
 
 @Component
 @RequiredArgsConstructor
@@ -16,6 +18,7 @@ import org.viators.orderprocessingsystem.messaging.publisher.OrderEventPublisher
 public class TransactionalEventPublisher {
 
     private final OrderEventPublisher orderEventPublisher;
+    private final PaymentEventPublisher paymentEventPublisher;
 
     @TransactionalEventListener
     public void handleOrderPlaced(OrderPlacedEvent event) {
@@ -33,9 +36,14 @@ public class TransactionalEventPublisher {
 
     @TransactionalEventListener
     public void handlePaymentProcessed(PaymentProcessedEvent event) {
-        orderEventPublisher.publishPaymentEvent(
+        paymentEventPublisher.publishPaymentEvent(
             event.paymentEvent(), event.routingKey()
         );
+    }
+
+    @TransactionalEventListener
+    public void handleRefundPayment(RefundPaymentEvent event) {
+        paymentEventPublisher.publishPaymentEvent(event.paymentEvent(), event.routingKey());
     }
 
 }
