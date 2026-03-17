@@ -6,13 +6,13 @@ An e-commerce backend that handles the full order lifecycle: customers browse a 
 
 This project follows a deliberate **monolith-first** progression. The domain is built and understood as a single deployable unit before any distributed complexity is introduced. Each phase adds a new architectural layer on top of a working foundation:
 
-| Phase | Architecture | Status |
-|-------|-------------|--------|
-| **Phase 1** | Modular monolith | ✅ Complete |
-| **Phase 2** | Introduce messaging (RabbitMQ) | 🔄 In Progress |
-| **Phase 3** | Saga pattern | ⏳ Not started |
-| **Phase 4** | Service extraction + API Gateway | ⏳ Not started |
-| **Phase 5** | CQRS / Event Sourcing | ⏳ Not started |
+| Phase | Architecture | Status                   |
+|-------|-------------|--------------------------|
+| **Phase 1** | Modular monolith | ✅ Complete               |
+| **Phase 2** | Introduce messaging (RabbitMQ) | ✅ Complete |
+| **Phase 3** | Saga pattern | ✅ Complete            |
+| **Phase 4** | Service extraction + API Gateway | 🔄 In Progress            |
+| **Phase 5** | CQRS / Event Sourcing | ⏳ Not started            |
 
 ## Tech Stack
 
