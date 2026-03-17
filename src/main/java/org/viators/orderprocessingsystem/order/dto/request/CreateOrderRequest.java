@@ -4,11 +4,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
 
-import java.util.Set;
+import java.util.List;
 
 public record CreateOrderRequest(
     @Valid
     @NotEmpty(message = "At least one order item must be selected to proceed with the order")
-    Set<CreateOrderItemRequest> orderItemRequests
+    List<CreateOrderItemRequest> orderItemRequests
 ) {
 }

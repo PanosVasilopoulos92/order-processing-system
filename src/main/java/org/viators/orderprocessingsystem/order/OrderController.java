@@ -31,7 +31,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderDetailsResponse> create(@AuthenticationPrincipal(expression = "uuid") String customerUuid,
                                                        @Valid @RequestBody CreateOrderRequest request) {
-        OrderDetailsResponse response = orderService.create(customerUuid, request);
+        OrderDetailsResponse response = orderService.placeOrder(request, customerUuid);
         URI location = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{orderUuid}")
