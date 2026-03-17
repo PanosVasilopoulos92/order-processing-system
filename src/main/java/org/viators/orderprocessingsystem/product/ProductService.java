@@ -12,9 +12,7 @@ import org.viators.orderprocessingsystem.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.DuplicateResourceException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
-import org.viators.orderprocessingsystem.order.OrderService;
-import org.viators.orderprocessingsystem.order.OrderT;
-import org.viators.orderprocessingsystem.orderitem.OrderItemService;
+import org.viators.orderprocessingsystem.orderitem.dto.request.CreateOrderItemRequest;
 import org.viators.orderprocessingsystem.product.dto.request.CreateProductRequest;
 import org.viators.orderprocessingsystem.product.dto.request.ProductSearchFilterRequest;
 import org.viators.orderprocessingsystem.product.dto.request.UpdateProductRequest;
@@ -22,8 +20,7 @@ import org.viators.orderprocessingsystem.product.dto.response.ProductDetailsResp
 import org.viators.orderprocessingsystem.product.dto.response.ProductSummaryResponse;
 import org.viators.orderprocessingsystem.user.UserService;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -110,7 +107,7 @@ public class ProductService {
             .map(Sort.Order::getProperty)
             .filter(field -> !ALLOWED_SORT_FIELDS.contains(field))
             .findFirst()
-            .ifPresent(field ->{
+            .ifPresent(field -> {
                 throw new BusinessValidationException(
                     "Invalid sort field: '%s'. Allowed fields: %s".formatted(field, ALLOWED_SORT_FIELDS));
             });
@@ -131,6 +128,63 @@ public class ProductService {
 
         return productRepository.findAll(specs, pageable)
             .map(ProductDetailsResponse::from);
+    }
+
+    // Methods used by Saga pattern -------------------------
+
+    /**
+     * Validates all requested order items and returns the loaded product entities.
+     *
+     * This method owns the business rules for what makes a product orderable:
+     * existence, active status, sufficient stock, and no duplicates. It returns
+     * the loaded entities so the caller (saga step) can pass them to downstream
+     * steps without redundant DB queries.
+     *
+     * Returning Map<String, ProductT> rather than void is intentional — the loaded
+     * entities are needed by ReserveStockStep and CreateOrderStep. The service
+     * method does the work and hands back what it loaded. The step decides where
+     * that result goes (into the SagaContext).
+     */
+    public Map<String, ProductT> validateAndLoad(List<CreateOrderItemRequest> items) {
+        Set<String> seen = new HashSet<>();
+        Map<String, ProductT> result = new HashMap<>();
+
+        items.forEach(item -> {
+            if (!seen.add(item.productUuid())) {
+                throw new BusinessValidationException(
+                    "Duplicate product in order: " + item.productUuid()
+                );
+            }
+
+            ProductT product = getActiveProduct(item.productUuid());
+
+            if (product.getStockQuantity() < item.quantity()) {
+                throw new BusinessValidationException(
+                    "Insufficient stock for product: " + item.productUuid() +
+                        ". Requested: " + item.quantity() +
+                        ", Available: " + product.getStockQuantity()
+                );
+            }
+
+            result.put(item.productUuid(), product);
+        });
+
+        return result;
+    }
+
+    @Transactional
+    public long reduceStock(String productUuid, long quantity) {
+        ProductT product = productRepository.findByUuid(productUuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
+
+        product.setStockQuantity(product.getStockQuantity() - quantity);
+        return quantity;
+    }
+
+    @Transactional
+    public void restoreStock(String productUuid, long quantity) {
+        productRepository.findByUuid(productUuid).ifPresent(product ->
+            product.setStockQuantity(product.getStockQuantity() + quantity));
     }
 
 }
