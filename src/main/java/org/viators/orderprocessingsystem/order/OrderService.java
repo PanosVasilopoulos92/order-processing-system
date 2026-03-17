@@ -25,6 +25,7 @@ import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 import org.viators.orderprocessingsystem.payment.PaymentQueryService;
 import org.viators.orderprocessingsystem.payment.PaymentService;
 import org.viators.orderprocessingsystem.payment.PaymentT;
+import org.viators.orderprocessingsystem.product.ProductService;
 import org.viators.orderprocessingsystem.product.ProductT;
 import org.viators.orderprocessingsystem.saga.order.OrderPlacementSaga;
 import org.viators.orderprocessingsystem.user.UserService;
@@ -49,6 +50,7 @@ public class OrderService {
     private final PaymentService paymentService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
     private final OrderPlacementSaga orderPlacementSaga;
+    private final ProductService productService;
 
     // Event publishing
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -139,9 +141,9 @@ public class OrderService {
         order.setOrderState(OrderStateEnum.CANCELLED);
 
         Set<OrderItemT> orderItems = orderItemService.getAllOrderItemsForOrderWithProducts(orderUuid);
-        orderItems .forEach(
-            orderItemT -> orderItemT.getProduct().setStockQuantity(
-                orderItemT.getProduct().getStockQuantity() + orderItemT.getQuantity())
+
+        orderItems.forEach(orderItemT ->
+            productService.restoreStock(orderItemT.getProduct().getUuid(), orderItemT.getQuantity())
         );
 
         paymentService.refundOrderPayment(order);
@@ -325,7 +327,10 @@ public class OrderService {
     @Transactional
     public void cancelPendingOrder(String orderUuid) {
         orderRepository.findByUuidAndStatus(orderUuid, StatusEnum.ACTIVE)
-            .ifPresent(order -> order.setOrderState(OrderStateEnum.CANCELLED));
+            .ifPresent(order -> {
+                order.setOrderState(OrderStateEnum.CANCELLED);
+                orderRepository.save(order);
+            });
     }
 
 }

@@ -178,13 +178,16 @@ public class ProductService {
             .orElseThrow(() -> new ResourceNotFoundException("Product", "uuid", productUuid));
 
         product.setStockQuantity(product.getStockQuantity() - quantity);
+        productRepository.save(product);
         return quantity;
     }
 
     @Transactional
     public void restoreStock(String productUuid, long quantity) {
-        productRepository.findByUuid(productUuid).ifPresent(product ->
-            product.setStockQuantity(product.getStockQuantity() + quantity));
+        productRepository.findByUuid(productUuid).ifPresent(product -> {
+            product.setStockQuantity(product.getStockQuantity() + quantity);
+            productRepository.save(product);
+        });
     }
 
 }
