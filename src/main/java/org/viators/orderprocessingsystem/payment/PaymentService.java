@@ -13,8 +13,11 @@ import org.viators.orderprocessingsystem.common.enums.PaymentTypeEnum;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
 import org.viators.orderprocessingsystem.config.RabbitMQConfig;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
+import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.messaging.event.PaymentEvent;
 import org.viators.orderprocessingsystem.messaging.event.PaymentProcessedEvent;
+import org.viators.orderprocessingsystem.messaging.event.RefundPaymentEvent;
+import org.viators.orderprocessingsystem.notifications.NotificationTypeEnum;
 import org.viators.orderprocessingsystem.order.OrderQueryService;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.payment.dto.request.CreatePaymentRequest;
@@ -109,19 +112,35 @@ public class PaymentService {
     @Transactional
     public void refundOrderPayment(OrderT order) {
         PaymentT successfulPayment = paymentRepository.findByOrder_UuidAndPaymentState(order.getUuid(), PaymentStateEnum.SUCCESS)
-            .orElse(null);
+            .orElseThrow(() -> new ResourceNotFoundException("Payment for order: %s was not found".formatted(order.getUuid())));
 
-        if (successfulPayment != null) {
-            successfulPayment.setPaymentState(PaymentStateEnum.REFUNDED);
+        successfulPayment.setPaymentState(PaymentStateEnum.REFUNDED);
 
-            PaymentT refundPayment = new PaymentT();
-            refundPayment.setPaymentType(PaymentTypeEnum.REFUND);
-            refundPayment.setPaymentState(PaymentStateEnum.SUCCESS);
-            refundPayment.setAmount(successfulPayment.getAmount());
-            refundPayment.setRefundPayment(successfulPayment);
-            refundPayment.setPaymentMethod(successfulPayment.getPaymentMethod());
-            order.addPayment(refundPayment);
-        }
+        PaymentT refundPayment = new PaymentT();
+        refundPayment.setPaymentType(PaymentTypeEnum.REFUND);
+        refundPayment.setPaymentState(PaymentStateEnum.SUCCESS);
+        refundPayment.setAmount(successfulPayment.getAmount());
+        refundPayment.setRefundPayment(successfulPayment);
+        refundPayment.setPaymentMethod(successfulPayment.getPaymentMethod());
+        order.addPayment(refundPayment);
+
+        refundPayment = paymentRepository.save(refundPayment);
+
+        applicationEventPublisher.publishEvent(new RefundPaymentEvent(
+                PaymentEvent.of(
+                    NotificationTypeEnum.PAYMENT_REFUNDED.name(),
+                    refundPayment.getUuid(),
+                    order.getUuid(),
+                    order.getCustomer().getUuid(),
+                    order.getCustomer().getEmail(),
+                    PaymentStateEnum.SUCCESS.name(),
+                    successfulPayment.getAmount(),
+                    successfulPayment.getPaymentMethod().name(),
+                    refundPayment.getFailureReason()
+                ),
+                RabbitMQConfig.PAYMENT_SUCCESS_KEY
+            )
+        );
 
     }
 }
