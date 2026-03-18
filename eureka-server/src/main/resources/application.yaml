@@ -1,0 +1,61 @@
+spring:
+  application:
+    # This name appears in the Eureka dashboard and in log output.
+    # It's also how other servers would find this instance in a cluster.
+    name: eureka-server
+server:
+  # Port 8761 is the Eureka convention. All Eureka clients default to
+  # looking for a server at http://localhost:8761/eureka — using this
+  # port means clients work with zero additional configuration.
+  port: 8761
+
+  # ── Eureka Server-Specific Settings ──────────────────────────
+eureka:
+  client:
+    # WHY THESE ARE FALSE:
+    # A Eureka server has an embedded Eureka *client* (for cluster replication).
+    # In a multi-server cluster, Server A registers with Server B and vice versa.
+    # But we're running a SINGLE standalone instance, so:
+    #
+    # register-with-eureka: false
+    #   → "Don't try to register yourself with another Eureka server."
+    #     There IS no other server to register with.
+    #
+    # fetch-registry: false
+    #   → "Don't try to fetch the registry from another Eureka server."
+    #     You ARE the only source of truth.
+    #
+    # If you set these to true (the default), the server would try to
+    # reach http://localhost:8761/eureka and fail — because that's itself.
+    # It would log connection-refused errors on every heartbeat cycle.
+    register-with-eureka: false
+    fetch-registry: false
+
+  server:
+    # HOW SELF-PRESERVATION WORKS:
+    # Eureka tracks the expected number of heartbeats per minute.
+    # If the actual number drops below a threshold (default: 85%),
+    # Eureka enters "self-preservation mode" — it STOPS evicting instances.
+    #
+    # Why? If 50% of heartbeats suddenly fail, it's more likely a network
+    # partition than 50% of your services dying simultaneously. Evicting
+    # them would make the registry useless during a network hiccup.
+    #
+    # For LOCAL DEVELOPMENT, this causes confusion:
+    # - You stop a service → it stays in the registry for minutes
+    # - The dashboard shows a scary red warning banner
+    # - You wonder why your stopped service still appears as "UP"
+    #
+    # So we disable it in dev. In production, LEAVE IT ENABLED.
+    enable-self-preservation: false
+      # When self-preservation is off, this controls how often Eureka
+    # checks for expired leases and evicts them. Default is 60 seconds.
+    # We use 5 seconds for fast feedback during development.
+    eviction-interval-timer-in-ms: 5000
+
+logging:
+  level:
+    # Reduce Eureka's chatty logging in development.
+    # It logs every heartbeat, every registry fetch, every replication attempt.
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

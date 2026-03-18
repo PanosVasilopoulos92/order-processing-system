@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        EUREKA SERVER MODULE: A standalone Spring Boot app with one job —
+        be the service registry.
+
+        This module is deliberately minimal. It has NO business logic,
+        NO database, NO security configuration. Its only dependency
+        (beyond what the parent provides) is the Eureka server starter.
+
+        Design principle: infrastructure services should be as simple
+        as possible. Complexity in the registry means fragility in
+        the entire platform.
+    -->
+    <parent>
+        <groupId>org.viators</groupId>
+        <artifactId>order-processing-system</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>eureka-server</artifactId>
+    <name>Eureka Server</name>
+    <description>Netflix Eureka service registry for the OPS platform</description>
+
+    <dependencies>
+        <!--
+            This single starter brings in everything needed to run
+            a full Eureka server:
+            - Embedded Eureka server (Netflix OSS)
+            - Spring Boot autoconfiguration for Eureka
+            - Dashboard UI (the web page at http://localhost:8761)
+            - REST API endpoints under /eureka/* for client registration
+
+            Version is managed by the Spring Cloud BOM imported in the parent.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+        </dependency>
+
+        <!-- ── Testing ─────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

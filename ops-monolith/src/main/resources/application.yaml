@@ -1,0 +1,87 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: order-processing-system
+  threads:
+    virtual:
+      enabled: true
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: false
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
+      expiration: 86400000
+
+logging:
+  file:
+    name: logs/ops-logs.log
+
+# ── Eureka Client Configuration ────────────────────────────────
+
+eureka:
+  client:
+    # The URL of the Eureka server's REST API.
+    # Note the /eureka suffix — this is the API base path, not the dashboard URL.
+    #
+    # We use an environment variable with a localhost default so that:
+    # - Running locally (outside Docker): connects to localhost:8761
+    # - Running in Docker: docker-compose sets EUREKA_URI to the container hostname
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+
+    # How often this client fetches the registry from the server.
+    # Default is 30 seconds. We use 5 seconds in dev for fast feedback
+    # when services come and go during development.
+    registry-fetch-interval-seconds: 5
+
+  instance:
+    # Use the actual IP address in registration, not the container hostname.
+    # This matters in Docker: container hostnames are random hex strings
+    # (like "a1b2c3d4e5f6") that aren't resolvable from outside Docker.
+    # IP addresses work everywhere.
+    prefer-ip-address: true
+
+    # How often this instance sends a heartbeat to the server.
+    # Default is 30 seconds. We use 5 seconds in dev for fast detection
+    # of stopped services.
+    lease-renewal-interval-in-seconds: 5
+
+    # How long the server waits without a heartbeat before evicting this instance.
+    # Default is 90 seconds. We use 10 seconds in dev.
+    # IMPORTANT: This must be > lease-renewal-interval-in-seconds.
+    lease-expiration-duration-in-seconds: 10
