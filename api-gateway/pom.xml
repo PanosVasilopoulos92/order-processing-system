@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        API GATEWAY MODULE: The single entry point for all client traffic.
+
+        Responsibilities:
+        - Route requests to downstream services via Eureka discovery
+        - Validate JWT tokens (the ONLY service that holds the JWT secret)
+        - Inject X-User-UUID and X-User-Role headers for downstream services
+        - Reject unauthenticated requests to protected routes
+
+        Non-responsibilities:
+        - NO business logic
+        - NO database access
+        - NO JPA / Hibernate
+        - NO servlet API (this is a WebFlux application running on Netty)
+    -->
+    <parent>
+        <groupId>org.viators</groupId>
+        <artifactId>order-processing-system</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>api-gateway</artifactId>
+    <name>API Gateway</name>
+    <description>Spring Cloud Gateway — single entry point for the OPS platform</description>
+
+    <dependencies>
+        <!-- ── Spring Cloud Gateway (WebFlux variant) ──────────── -->
+        <!--
+            This is the RENAMED artifact in Spring Cloud 2025.1.0.
+            The old "spring-cloud-starter-gateway" was removed.
+
+            This starter brings in:
+            - Spring WebFlux (reactive web stack, runs on Netty — NOT Tomcat)
+            - Spring Cloud Gateway routing engine (predicates, filters)
+            - Spring Cloud LoadBalancer (for lb:// URI resolution via Eureka)
+
+            IMPORTANT: This starter includes spring-boot-starter-webflux.
+            Do NOT also add spring-boot-starter-webmvc — they conflict.
+            WebFlux and MVC cannot coexist in the same application.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
+        </dependency>
+
+        <!-- ── Eureka Client (for service discovery) ───────────── -->
+        <!--
+            The gateway resolves "lb://order-processing-system" URIs
+            by asking Eureka: "What instances of order-processing-system
+            are currently registered?" Eureka returns IP + port, and
+            Spring Cloud LoadBalancer picks one.
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- ── JWT Support (token parsing only — no token creation) ── -->
+        <!--
+            The gateway parses and validates JWT tokens. It does NOT
+            create them — that's the monolith's AuthService responsibility.
+
+            We need the same JJWT library as the monolith so both sides
+            use the same signing algorithm and key format.
+
+            Versions are managed by the parent POM's <dependencyManagement>.
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ── Testing ─────────────────────────────────────────── -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

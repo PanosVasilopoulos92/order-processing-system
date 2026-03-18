@@ -6,12 +6,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.viators.common.exceptions.ResourceNotFoundException;
+import org.viators.orderprocessingsystem.auth.GatewayPrincipal;
 import org.viators.orderprocessingsystem.common.services.OwnershipAuthorizationService;
-import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.messaging.event.OrderEvent;
 import org.viators.orderprocessingsystem.messaging.event.PaymentEvent;
 import org.viators.orderprocessingsystem.notifications.dto.response.NotificationResponse;
-import org.viators.orderprocessingsystem.user.UserT;
 
 import java.math.BigDecimal;
 
@@ -25,7 +25,7 @@ public class NotificationService {
     private final OwnershipAuthorizationService ownershipAuthorizationService;
     private final EmailService emailService;
 
-    public NotificationResponse getNotification(UserT principal, String notificationUuid) {
+    public NotificationResponse getNotification(GatewayPrincipal principal, String notificationUuid) {
         NotificationT notification = notificationRepository.findByUuid(notificationUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Notification", "uuid", notificationUuid));
 
@@ -46,7 +46,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAsRead(UserT principal, String notificationUuid) {
+    public void markAsRead(GatewayPrincipal principal, String notificationUuid) {
         NotificationT notification = notificationRepository.findByUuid(notificationUuid)
             .orElseThrow(() -> new ResourceNotFoundException("Notification", "uuid", notificationUuid));
 

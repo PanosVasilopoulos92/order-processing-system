@@ -2,7 +2,7 @@ package org.viators.orderprocessingsystem.product;
 
 import org.springframework.data.jpa.domain.Specification;
 import org.viators.orderprocessingsystem.common.enums.CategoryEnum;
-import org.viators.orderprocessingsystem.common.enums.StatusEnum;
+import org.viators.common.enums.StatusEnum;
 
 import java.math.BigDecimal;
 

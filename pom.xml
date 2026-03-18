@@ -45,8 +45,11 @@
        3. Build them in the correct order (reactor build)
    -->
     <modules>
+        <module>ops-common</module>
+        <module>ops-auth</module>
         <module>ops-monolith</module>
         <module>eureka-server</module>
+        <module>api-gateway</module>
     </modules>
 
     <properties>
@@ -76,6 +79,36 @@
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- ops-common: our shared library. Declaring it here lets
+             child modules reference it without specifying a version. -->
+            <dependency>
+                <groupId>org.viators</groupId>
+                <artifactId>ops-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ── JJWT (shared between gateway and monolith) ──── -->
+            <!--
+                Both the api-gateway and ops-monolith need JJWT for JWT
+                parsing. Centralizing the version here ensures they always
+                use the same version — no subtle serialization mismatches.
+            -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>0.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>0.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>0.13.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -3,7 +3,7 @@ package org.viators.orderprocessingsystem.notifications;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.viators.orderprocessingsystem.common.BaseEntity;
+import org.viators.common.entity.BaseEntity;
 
 @Entity
 @Table(name = "notifications")

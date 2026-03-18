@@ -41,12 +41,6 @@ spring:
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASSWORD}
 
-application:
-  security:
-    jwt:
-      secret-key: ${JWT_SECRET_KEY}
-      expiration: 86400000
-
 logging:
   file:
     name: logs/ops-logs.log

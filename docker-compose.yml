@@ -70,6 +70,93 @@ services:
     networks:
       - ops-network
 
+  # ── API Gateway ──────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: ops-gateway
+    ports:
+      # 8080 is now the ONLY port clients connect to.
+      - "8080:8080"
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?error}
+      EUREKA_URI: http://ops-eureka:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ops-network
+
+  # ── Auth Service ─────────────────────────────────────────────
+  ops-auth:
+    build:
+      context: .
+      dockerfile: ops-auth/Dockerfile
+    container_name: ops-auth
+    ports:
+      # Internal port — not client-facing. Exposed for debugging.
+      - "8070:8070"
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?error}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?error}
+      MYSQL_USER: ${MYSQL_USER:?error}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?error}
+      EUREKA_URI: http://ops-eureka:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8070/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ops-network
+
+  # ── OPS Monolith ────────────────────────────────────────────
+  ops-monolith:
+    build:
+      context: .
+      dockerfile: ops-monolith/Dockerfile
+    container_name: ops-monolith
+    ports:
+      # Internal port — not client-facing. Exposed for debugging.
+      - "8888:8888"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?error}
+      MYSQL_USER: ${MYSQL_USER:?error}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?error}
+      EUREKA_URI: http://ops-eureka:8761/eureka
+      SPRING_RABBITMQ_HOST: ops-rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:?error}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?error}
+      SPRING_MAIL_HOST: ops-mailhog
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ops-network
+
  # ── MailHog (optional — development email testing) ─────────────
   mailhog:
     image: mailhog/mailhog

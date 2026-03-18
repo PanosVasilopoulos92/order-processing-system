@@ -2,7 +2,7 @@ package org.viators.orderprocessingsystem.product;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.viators.orderprocessingsystem.common.BaseEntity;
+import org.viators.common.entity.BaseEntity;
 import org.viators.orderprocessingsystem.common.enums.CategoryEnum;
 
 import java.math.BigDecimal;

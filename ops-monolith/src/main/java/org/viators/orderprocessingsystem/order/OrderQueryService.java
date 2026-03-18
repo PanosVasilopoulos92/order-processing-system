@@ -5,9 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.viators.orderprocessingsystem.common.enums.OrderStateEnum;
-import org.viators.orderprocessingsystem.common.enums.StatusEnum;
-import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
-import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
+import org.viators.common.enums.StatusEnum;
+import org.viators.common.exceptions.BusinessValidationException;
+import org.viators.common.exceptions.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor

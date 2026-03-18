@@ -2,6 +2,7 @@ package org.viators.orderprocessingsystem;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
@@ -31,7 +32,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  *   <li>It's self-documenting for developers who read the main class first.</li>
  * </ul>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"org.viators.orderprocessingsystem", "org.viators.common"})
+@EntityScan(basePackages = {"org.viators.orderprocessingsystem", "org.viators.common.entity"})
 @EnableDiscoveryClient  // Registers this service with Eureka on startup
 public class OrderProcessingSystemApplication {
 

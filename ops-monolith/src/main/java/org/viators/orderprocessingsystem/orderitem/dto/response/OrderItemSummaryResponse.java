@@ -1,6 +1,6 @@
 package org.viators.orderprocessingsystem.orderitem.dto.response;
 
-import org.viators.orderprocessingsystem.common.enums.StatusEnum;
+import org.viators.common.enums.StatusEnum;
 import org.viators.orderprocessingsystem.orderitem.OrderItemT;
 
 import java.math.BigDecimal;
