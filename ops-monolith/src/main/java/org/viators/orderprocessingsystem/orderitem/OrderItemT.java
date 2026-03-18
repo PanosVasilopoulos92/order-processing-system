@@ -3,7 +3,7 @@ package org.viators.orderprocessingsystem.orderitem;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.viators.orderprocessingsystem.common.BaseEntity;
+import org.viators.common.entity.BaseEntity;
 import org.viators.orderprocessingsystem.order.OrderT;
 import org.viators.orderprocessingsystem.product.ProductT;
 

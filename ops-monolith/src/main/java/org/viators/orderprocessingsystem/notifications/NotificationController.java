@@ -8,8 +8,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.viators.orderprocessingsystem.auth.GatewayPrincipal;
 import org.viators.orderprocessingsystem.notifications.dto.response.NotificationResponse;
-import org.viators.orderprocessingsystem.user.UserT;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -20,14 +20,14 @@ public class NotificationController {
 
     @GetMapping("/{notificationUuid}")
     public ResponseEntity<NotificationResponse> getNotification(
-            @AuthenticationPrincipal UserT principal,
+            @AuthenticationPrincipal GatewayPrincipal principal,
             @PathVariable String notificationUuid) {
         return ResponseEntity.ok(notificationService.getNotification(principal, notificationUuid));
     }
 
     @GetMapping
     public ResponseEntity<Page<NotificationResponse>> getAllNotifications(
-            @AuthenticationPrincipal UserT principal,
+            @AuthenticationPrincipal GatewayPrincipal principal,
             @RequestParam(required = false) String customerUuid,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         String targetUuid = (principal.isAdminUser() && customerUuid != null) ? customerUuid : principal.getUuid();
@@ -36,7 +36,7 @@ public class NotificationController {
 
     @PutMapping("/{notificationUuid}/read")
     public ResponseEntity<Void> markAsRead(
-            @AuthenticationPrincipal UserT principal,
+            @AuthenticationPrincipal GatewayPrincipal principal,
             @PathVariable String notificationUuid) {
         notificationService.markAsRead(principal, notificationUuid);
         return ResponseEntity.noContent().build();
@@ -44,7 +44,7 @@ public class NotificationController {
 
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(
-            @AuthenticationPrincipal UserT principal,
+            @AuthenticationPrincipal GatewayPrincipal principal,
             @RequestParam(required = false) String customerUuid) {
         String targetUuid = (principal.isAdminUser() && customerUuid != null) ? customerUuid : principal.getUuid();
         return ResponseEntity.ok(notificationService.numberOfUnreadMessages(targetUuid));

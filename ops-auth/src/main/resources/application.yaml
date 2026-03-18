@@ -1,0 +1,48 @@
+server:
+  port: 8070
+
+spring:
+  application:
+    name: auth-service
+
+  # Shared MySQL database (Phase 1 — same instance as monolith).
+  # Both services read/write the same "users" table.
+  # In Phase 2, auth-service would own the user data exclusively.
+  datasource:
+    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # "validate" instead of "update" — the monolith owns schema evolution.
+      # The auth-service should not create or alter tables.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: false
+
+# JWT configuration — this service SIGNS tokens.
+# The same secret must exist in the api-gateway for VERIFICATION.
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
+      expiration: 86400000
+
+# Eureka registration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+logging:
+  file:
+    name: logs/auth-service-logs.log

@@ -2,7 +2,7 @@ package org.viators.orderprocessingsystem.common.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.viators.orderprocessingsystem.exceptions.AccessDeniedException;
+import org.viators.common.exceptions.AccessDeniedException;
 
 @Service
 @Slf4j

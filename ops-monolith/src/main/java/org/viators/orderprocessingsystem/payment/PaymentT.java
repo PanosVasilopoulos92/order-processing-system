@@ -3,7 +3,7 @@ package org.viators.orderprocessingsystem.payment;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.viators.orderprocessingsystem.common.BaseEntity;
+import org.viators.common.entity.BaseEntity;
 import org.viators.orderprocessingsystem.common.enums.PaymentMethodEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentStateEnum;
 import org.viators.orderprocessingsystem.common.enums.PaymentTypeEnum;

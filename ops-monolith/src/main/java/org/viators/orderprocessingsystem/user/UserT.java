@@ -6,9 +6,9 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.viators.orderprocessingsystem.common.BaseEntity;
-import org.viators.orderprocessingsystem.common.enums.StatusEnum;
-import org.viators.orderprocessingsystem.common.enums.UserRolesEnum;
+import org.viators.common.entity.BaseEntity;
+import org.viators.common.enums.StatusEnum;
+import org.viators.common.enums.UserRolesEnum;
 import org.viators.orderprocessingsystem.order.OrderT;
 
 import java.util.Collection;
