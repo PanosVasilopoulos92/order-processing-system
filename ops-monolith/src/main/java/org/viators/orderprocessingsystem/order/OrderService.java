@@ -15,7 +15,6 @@ import org.viators.orderprocessingsystem.config.RabbitMQConfig;
 import org.viators.orderprocessingsystem.exceptions.BusinessValidationException;
 import org.viators.orderprocessingsystem.exceptions.ResourceNotFoundException;
 import org.viators.orderprocessingsystem.messaging.event.OrderEvent;
-import org.viators.orderprocessingsystem.messaging.event.OrderPlacedEvent;
 import org.viators.orderprocessingsystem.messaging.event.OrderStateChangedEvent;
 import org.viators.orderprocessingsystem.order.dto.request.CreateOrderRequest;
 import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse;
@@ -27,7 +26,6 @@ import org.viators.orderprocessingsystem.payment.PaymentService;
 import org.viators.orderprocessingsystem.payment.PaymentT;
 import org.viators.orderprocessingsystem.product.ProductService;
 import org.viators.orderprocessingsystem.product.ProductT;
-import org.viators.orderprocessingsystem.saga.order.OrderPlacementSaga;
 import org.viators.orderprocessingsystem.user.UserService;
 import org.viators.orderprocessingsystem.user.UserT;
 
@@ -35,7 +33,6 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 
 @Service
 @Slf4j
@@ -49,7 +46,6 @@ public class OrderService {
     private final PaymentQueryService paymentQueryService;
     private final PaymentService paymentService;
     private final OwnershipAuthorizationService ownershipAuthorizationService;
-    private final OrderPlacementSaga orderPlacementSaga;
     private final ProductService productService;
 
     // Event publishing
@@ -78,58 +74,6 @@ public class OrderService {
             .orElse(payments.isEmpty() ? PaymentStateEnum.PENDING : PaymentStateEnum.FAILED);
 
         return OrderDetailsResponse.from(order, paymentState);
-    }
-
-    /**
-     * Places an order using the OrderPlacementSaga.
-     *
-     * This method has been refactored from a single @Transactional block to saga-based
-     * orchestration. The business logic (validation, stock reservation, order creation)
-     * now lives in discrete, compensatable steps.
-     *
-     * Transactional boundary note:
-     * @Transactional is still present here, wrapping the entire saga execution. In Phase 3
-     * (monolith), all steps hit the same database, so a single transaction boundary is still
-     * possible and desirable — it gives us DB-level rollback as a safety net alongside the
-     * saga's logical compensation.
-     *
-     * In Phase 4 (service extraction), this @Transactional will be removed from the saga call,
-     * and each step will manage its own transaction independently (one transaction per
-     * service/database). That's when the saga's compensation becomes the ONLY rollback mechanism.
-     *
-     * @param request      the order placement request
-     * @param customerUuid the UUID of the authenticated customer
-     * @return the response DTO for the created order
-     */
-    @Transactional
-    public OrderDetailsResponse placeOrder(CreateOrderRequest request, String customerUuid) {
-        try {
-            OrderT createdOrder = orderPlacementSaga.execute(request, customerUuid);
-
-            applicationEventPublisher.publishEvent(
-                new OrderPlacedEvent(
-                    OrderEvent.of(
-                        "ORDER_PLACED",
-                        createdOrder.getUuid(),
-                        customerUuid,
-                        createdOrder.getCustomer().getEmail(),
-                        createdOrder.getOrderState().name(),
-                        createdOrder.getTotalAmount()
-                    )
-                )
-            );
-
-            return OrderDetailsResponse.from(createdOrder, PaymentStateEnum.PENDING);
-
-        } catch (Exception e) {
-            // The saga already logged the failure and ran compensation.
-            // The specific exception type determines the HTTP response code —
-            // BusinessValidationException → 422, ResourceNotFoundException → 404, etc.
-            if (e instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            throw new RuntimeException("Order placement failed: " + e.getMessage(), e);
-        }
     }
 
     @Transactional

@@ -17,6 +17,7 @@ import org.viators.orderprocessingsystem.order.dto.response.OrderDetailsResponse
 import org.viators.orderprocessingsystem.order.dto.response.OrderSummaryResponse;
 import org.viators.orderprocessingsystem.payment.PaymentService;
 import org.viators.orderprocessingsystem.payment.dto.response.PaymentDetailsResponse;
+import org.viators.orderprocessingsystem.saga.order.OrderPlacementSaga;
 
 import java.net.URI;
 
@@ -26,12 +27,13 @@ import java.net.URI;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderPlacementSaga orderPlacementSaga;
     private final PaymentService paymentService;
 
     @PostMapping
     public ResponseEntity<OrderDetailsResponse> create(@AuthenticationPrincipal(expression = "uuid") String customerUuid,
                                                        @Valid @RequestBody CreateOrderRequest request) {
-        OrderDetailsResponse response = orderService.placeOrder(request, customerUuid);
+        OrderDetailsResponse response = orderPlacementSaga.placeOrder(request, customerUuid);
         URI location = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{orderUuid}")

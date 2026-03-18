@@ -1,4 +1,33 @@
 services:
+  # ── Eureka Service Registry ──────────────────────────────────
+  # Must start BEFORE any service that registers with it.
+  # Other services use depends_on to wait for Eureka's healthcheck.
+  eureka-server:
+    build:
+      # Context must be the project root so Docker can access
+      # both the parent POM and the eureka-server subdirectory.
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: ops-eureka
+    # 8761 → convention port. Maps container port to host port
+    # so you can access the dashboard at http://localhost:8761
+    ports:
+      - "8761:8761"
+    healthcheck:
+      # Eureka exposes a health endpoint via Spring Boot Actuator.
+      # We use wget instead of curl because our base image (eclipse-temurin)
+      # doesn't include curl by default.
+      #
+      # The /actuator/health endpoint returns {"status":"UP"} when ready.
+      # We check this to know when Eureka is truly ready to accept registrations.
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ops-network
+
   mysql:
     image: mysql:8
     container_name: ops-mysql
@@ -17,6 +46,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - ops-network
 
  # ── RabbitMQ 3 with Management UI ──────────────────────────────
   rabbitmq:
@@ -36,6 +67,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - ops-network
 
  # ── MailHog (optional — development email testing) ─────────────
   mailhog:
@@ -44,6 +77,8 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+    networks:
+      - ops-network
 
 # ── Named Volumes ─────────────────────────────────────────────────
 # Declared here so Docker manages their lifecycle independently
@@ -51,3 +86,11 @@ services:
 volumes:
   mysql_data:
   rabbitmq_data:
+
+# ── Shared Network ─────────────────────────────────────────────
+# All services on the same bridge network can reach each other
+# by container name (e.g., "ops-eureka", "ops-mysql").
+# This is how the monolith finds Eureka inside Docker.
+networks:
+  ops-network:
+    driver: bridge
